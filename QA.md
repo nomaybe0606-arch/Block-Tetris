@@ -1,14 +1,16 @@
 # QA — Grid Pulse, 31 октября 2026
 
-## Подготовка GitHub Pages
+## GitHub Pages — исправление публикации в Block-Puzzle
 
-Добавлены отдельный Git-репозиторий `main`, исключения зависимостей/сборки/архивов/секретов, `.gitattributes`, Node.js 24 для CI и workflow `.github/workflows/pages.yml`. Production использует `/grid-pulse/`, dev — `/`. Игровые модули `src` не менялись при настройке публикации.
+Добавлены отдельный Git-репозиторий `main`, исключения зависимостей/сборки/архивов/секретов, `.gitattributes`, Node.js 24 для CI и workflow `.github/workflows/pages.yml`. Production использует `/Block-Puzzle/`, dev — `/`. Игровые модули `src` не менялись при настройке публикации.
 
-TypeScript и 58 тестов прошли, сборка GitHub Pages создана. Проверка сборки проверяет 28 HTTP-адресов под `/grid-pulse/`, ожидаемые байты и MIME-типы, включая SDK, конфигурацию и 14 аудиофайлов. Все файлы `public` совпадают с выходными побайтно.
+TypeScript и 58 тестов прошли, сборка GitHub Pages создана. Проверка сборки проверяет 28 HTTP-адресов под `/Block-Puzzle/`, ожидаемые байты и MIME-типы, включая SDK, конфигурацию и 14 аудиофайлов. Все файлы `public` совпадают с выходными побайтно.
 
-Дополнительно проверены настоящий Vite dev-сервер на `/` (страница, TypeScript-модуль, SDK, JSON и музыка — HTTP 200) и Vite production-preview на `/grid-pulse/` (27 файлов — HTTP 200, 14 звуков с audio MIME). Выполнен чистый `npm ci`; существование версий всех пяти официальных Actions проверено по remote tags. Переносимый ZIP для sandbox тоже собран и проверен; в `dist` после проверки оставлена сборка GitHub Pages. Живой браузерный прогон в этом этапе не выполнялся.
+Дополнительно проверены настоящий Vite dev-сервер на `/` (страница, TypeScript-модуль, SDK, JSON и музыка — HTTP 200) и Vite production-preview на `/Block-Puzzle/` (27 файлов — HTTP 200, 14 звуков с audio MIME). Выполнен чистый `npm ci`; существование версий всех пяти официальных Actions проверено по remote tags. Переносимый ZIP для sandbox тоже собран и проверен; в `dist` после проверки оставлена сборка GitHub Pages. Живой браузерный прогон в этом этапе не выполнялся.
 
-GitHub CLI не найден. Удалённый репозиторий не создан, push и реальный запуск Actions/Pages не выполнялись. Инструкция ручной публикации — `GITHUB_PAGES.md`. До первого успешного deployment рабочая публичная ссылка не подтверждена. Реклама и сохранения Bridge по-прежнему требуют отдельного sandbox QA.
+Фактический репозиторий — `nomaybe0606-arch/Block-Puzzle`. Первый запуск `41230314209` успешно выполнил всё задание `build`, но упал в `deploy → Configure GitHub Pages`: annotation сообщает `Get Pages site failed` / `HttpError: Not Found`; deployment был пропущен. Это сбой получения настроек Pages. Отдельно обнаружен неверный URL base `/grid-pulse/`, который исправлен на `/Block-Puzzle/` в конфигурации и проверке ресурсов. В deploy явно добавлено `contents: read` наряду с `pages: write` и `id-token: write`.
+
+При авторизованной диагностике Pages API уже вернул HTTP 200 и `build_type: workflow`: текущая настройка источника — GitHub Actions. Предупреждение Node.js 20 у `configure-pages@v5` не является причиной HTTP 404; runner выполняет action на Node.js 24. Доступные данные подтверждают успешную совместимость Node.js 24, установки npm и зависимостей в build исходного запуска. Инструкция и точный адрес сайта обновлены в `GITHUB_PAGES.md`. Реальные реклама и облачные сохранения Bridge требуют отдельного sandbox QA.
 
 ## Выполнено
 

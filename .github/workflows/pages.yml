@@ -38,7 +38,7 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Build for /grid-pulse/
+      - name: Build for /Block-Puzzle/
         run: npm run build
 
       - name: Verify assets and HTTP paths
@@ -54,6 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:

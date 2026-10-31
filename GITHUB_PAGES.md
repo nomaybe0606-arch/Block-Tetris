@@ -1,83 +1,71 @@
-# Публикация Grid Pulse в GitHub Pages
+# Grid Pulse: GitHub Pages в репозитории Block-Puzzle
 
-Единственный настроенный хостинг — GitHub Pages. Новый удалённый репозиторий должен называться **grid-pulse**. Итоговый адрес после успешного деплоя:
+Репозиторий: https://github.com/nomaybe0606-arch/Block-Puzzle
 
-```text
-https://YOUR_GITHUB_LOGIN.github.io/grid-pulse/
-```
+Адрес игры после успешного deployment: https://nomaybe0606-arch.github.io/Block-Puzzle/
 
-Подставьте свой GitHub login. Сейчас удалённый репозиторий и рабочая публичная ссылка ещё не созданы: GitHub CLI (`gh`) не установлен/не найден в PATH и стандартных каталогах. Авторизованные вызовы GitHub не выполнялись.
+Публикация выполняется только через GitHub Pages. Название игры остаётся Grid Pulse; имя репозитория и префикс URL — **Block-Puzzle**, с учётом регистра.
 
-## Что подготовлено локально
+## Диагностика первого запуска
 
-- Отдельный Git-репозиторий в текущей папке проекта, ветка `main`; существующих remote до настройки не было. Другие проекты не менялись.
-- `.gitignore` исключает `node_modules`, `dist`, `artifacts`, ZIP, `.env*`, локальные конфигурации и распространённые файлы ключей/секретов. `.env.example` разрешён как безопасный шаблон.
-- `.gitattributes` нормализует текст в LF и сохраняет аудио как бинарные данные.
-- `vite.config.ts`: dev `/`; production и preview `/grid-pulse/`.
-- `.github/workflows/pages.yml`: push в `main` или ручной запуск → Node.js 24 → `npm ci` → TypeScript → 58 тестов → build → HTTP-проверка ресурсов → официальный Pages artifact → deploy.
-- Публикуется исключительно содержимое `dist`, созданное в CI. Ветка `gh-pages`, сторонние хостинги и персональные токены не требуются. Автоматический `GITHUB_TOKEN` используется только с правами, заданными workflow.
+Запуск https://github.com/nomaybe0606-arch/Block-Puzzle/actions/runs/41230314209:
 
-## Создать репозиторий и выполнить первый push
+- `build` завершился успешно: Node.js, npm ci, TypeScript, все тесты, production build, проверка ресурсов и загрузка артефакта прошли.
+- `deploy` завершился ошибкой на `Configure GitHub Pages`.
+- Публичная annotation GitHub: `Get Pages site failed` и `HttpError: Not Found`. Шаг публикации артефакта был пропущен.
+- Это ошибка получения настроек сайта Pages. Неправильный `/grid-pulse/` не вызвал падение этого шага, но привёл бы к неверным URL ассетов после публикации.
+- При авторизованной диагностике Pages API уже возвращает HTTP 200 и `build_type: workflow`. Следовательно, в текущем состоянии Pages настроен на GitHub Actions. Не требуется создавать второй репозиторий.
+- Предупреждение о Node.js 20 относится к внутреннему runtime официального `configure-pages@v5`, который runner запускает на Node.js 24. Ошибка шага была HTTP 404, а не ошибкой Node/npm. Проверки не отключались.
 
-1. Войдите в свой GitHub и откройте [создание репозитория](https://github.com/new).
-2. Укажите **Repository name: `grid-pulse`**, выберите **Public**, если используете GitHub Free. Оставьте выключенными создание README, `.gitignore` и лицензии: локальный проект уже подготовлен. Создайте пустой репозиторий. Если имя уже занято, не используйте чужой или старый проект — сначала выберите подходящий аккаунт/владельца для нового репозитория.
-3. В терминале текущего проекта выполните, заменив `YOUR_GITHUB_LOGIN`:
+## Пути и команды
 
-```powershell
-Set-Location -LiteralPath 'C:\Users\Владик\Desktop\JOB\Ygames\Block Puzzle 8×8'
-git status
-git remote add origin https://github.com/YOUR_GITHUB_LOGIN/grid-pulse.git
-git push -u origin main
-```
+| Сборка | Base | Команда | Адрес для локальной проверки |
+| --- | --- | --- | --- |
+| Разработка | `/` | `npm run dev` | `http://127.0.0.1:5173/` |
+| GitHub Pages | `/Block-Puzzle/` | `npm run build` | `npm run preview` → `http://127.0.0.1:4173/Block-Puzzle/` |
+| Sandbox Playgama | `./` | `npm run package` | Переносимый ZIP в `artifacts/`, не способ хостинга |
 
-Первый коммит уже подготовлен локально. Не используйте force push. Если `origin` уже добавлен вами, сначала посмотрите `git remote -v`; повторно добавлять его не нужно. При запросе авторизации следуйте стандартному входу Git/Git Credential Manager; не вставляйте токены в URL или файлы проекта.
+После `npm run package` для возврата к Pages выполните `npm run build`. Звуки используют `import.meta.env.BASE_URL`, SDK подключается официальным локальным Vite-плагином, конфигурация Bridge лежит рядом с `index.html`. Для запуска используйте HTTP, не `file://`.
 
-4. Откройте **Settings → Pages → Build and deployment → Source → GitHub Actions**. При необходимости разрешите GitHub Actions в **Settings → Actions → General** согласно политике вашего аккаунта/организации. Не выбирайте публикацию исходников из ветки: Vite требует сборку.
-5. Откройте **Actions → Deploy Grid Pulse to GitHub Pages**. Если первый запуск успел завершиться ошибкой до включения Pages, выполните **Run workflow → main → Run workflow** либо перезапустите неудачный запуск.
-6. Дождитесь успешных заданий `build` и `deploy`. Откройте ссылку из deployment/environment `github-pages` или Settings → Pages. До завершения первого деплоя 404 по ожидаемому адресу возможен.
+## Workflow
 
-Настройка Source и официальный способ публикации описаны в [документации GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages). Для project site Vite использует `base: '/grid-pulse/'`, как указано в [документации Vite](https://vite.dev/guide/static-deploy#github-pages).
+Файл `.github/workflows/pages.yml` запускается по push в `main` и вручную через `workflow_dispatch`.
 
-## Последующие обновления
+1. Checkout и Node.js 24 из `.node-version`.
+2. `npm ci` по `package-lock.json`.
+3. `npm run typecheck` и `npm test`.
+4. `npm run build` и `npm run verify:build`.
+5. Загрузка исключительно `dist` через официальный `upload-pages-artifact`.
+6. Задание `deploy` после успешного `build`: `configure-pages`, затем `deploy-pages`.
+
+Права build: `contents: read`. Права deploy заданы явно: `contents: read`, `pages: write`, `id-token: write`; environment — `github-pages`. `GITHUB_TOKEN` выдаётся GitHub автоматически. PAT и дополнительные секреты в workflow не нужны.
+
+Проверка ресурсов сопоставляет `public` и `dist` побайтно, проверяет HTML/JS-чанки, URL аудио, JSON и форматы OGG/MP3. Временный HTTP-сервер отдаёт все файлы под `/Block-Puzzle/`, без подмены отсутствующих ресурсов на HTML; проверяются ответы, содержимое и MIME-типы. Сервер закрывается после проверки.
+
+## Обновление
+
+`origin` уже указывает на нужный репозиторий. В текущей папке:
 
 ```sh
 git add .
 git commit -m "Update Grid Pulse"
-git push
+git push origin main
 ```
 
-Каждый push в `main` автоматически обновляет Pages после успешных проверок. При ошибке типов, тестов, сборки или ресурсов deploy не запускается, предыдущая опубликованная версия сохраняется. Состояние и ссылка доступны во вкладке Actions. Дополнительные действия с ZIP или ручная загрузка `dist` не нужны.
+Не используйте force push. Не добавляйте в Git `dist`, зависимости, ZIP или секреты. Если проверки не прошли, новое содержимое сайта не публикуется.
 
-## Локальная проверка
+## Если Configure GitHub Pages снова падает
 
-```sh
-npm install
-npm run dev
-# http://127.0.0.1:5173/
+1. Откройте https://github.com/nomaybe0606-arch/Block-Puzzle/settings/pages под аккаунтом владельца.
+2. В блоке **Build and deployment** выберите **Source → GitHub Actions**. Не выбирайте публикацию исходников из ветки: проект требует Vite build.
+3. Откройте **Actions → Deploy Grid Pulse to GitHub Pages** и выполните **Run workflow → main → Run workflow**, либо **Re-run failed jobs** у исправленного запуска.
+4. Если GitHub показывает ожидание environment approval, откройте запуск, нажмите **Review deployments**, выберите `github-pages` и подтвердите публикацию, если это предусмотрено вашими правилами репозитория.
+5. Дождитесь зелёных `build` и `deploy`, затем проверьте ссылку сайта и Network на 404 для SDK, JSON, JS/CSS, favicon и аудио.
 
-npm run typecheck
-npm test
-npm run build
-npm run verify:build
-npm run preview
-# http://127.0.0.1:4173/grid-pulse/
-```
+Официальная документация: https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages
 
-На Windows с запрещённым `npm.ps1` используйте `npm.cmd`. CI устанавливает зависимости через `npm ci` из `package-lock.json`; версия Node для CI задана в `.node-version`.
+`enablement: true` намеренно не добавлен: официальный action требует для первичного включения Pages отдельный токен с административными правами. Не нужно добавлять PAT ради обхода настройки Source. Если настройки уже корректны, смотрите конкретную annotation нового запуска.
 
-Проверка сборки сопоставляет `public` и `dist` побайтно, проверяет ссылки HTML и чанков JS, подстановку `BASE_URL` в аудио, конфигурацию Bridge и сигнатуры OGG/MP3. Затем запускает временный HTTP-сервер с точкой монтирования `/grid-pulse/` и без fallback на HTML, проверяет ответы и содержимое всех файлов, MIME-типы звуков/JS/CSS/JSON. Этот сервер закрывается после проверки.
+## Границы проверки
 
-## Проверить опубликованную игру
-
-- Открыть URL с завершающим `/grid-pulse/`; убедиться, что меню, обучение и классический режим запускаются.
-- В DevTools Network проверить отсутствие 404 для `playgama-bridge.js`, `playgama-bridge-config.json`, `assets/*.js`, `assets/*.css`, `favicon.svg` и `assets/audio/*`.
-- Включить звук жестом пользователя, отдельно проверить музыку и эффекты, оба формата на целевых браузерах.
-- Проверить drag мышью/touch, узкий и квадратный экран, поворот устройства, возврат после скрытия вкладки.
-
-HTTP-проверка файлов не заменяет визуальный и звуковой прогон в браузере. Опубликованный workflow нельзя считать проверенным на GitHub до его первого успешного запуска.
-
-## Playgama
-
-Существующая интеграция Bridge и игровые правила сохранены. GitHub Pages — стенд для геймплея/интерфейса, а не sandbox рекламной платформы. Реальную рекламу, облачные сохранения, host lifecycle и платформенные идентификаторы проверяйте отдельно в sandbox Playgama/Яндекс/VK. Прямое localStorage/IndexedDB/cookies не добавлялось.
-
-При необходимости `npm run package` делает отдельный переносимый ZIP с относительными путями для sandbox. Он игнорируется Git и не используется workflow Pages. Для возврата к Pages-сборке выполните `npm run build`.
+GitHub Pages используется для геймплея и интерфейса. Реальную рекламу, облачные сохранения и host lifecycle Bridge отдельно проверяйте в sandbox Playgama/Яндекс/VK. Прямое localStorage/IndexedDB/cookies не добавлялось. HTTP-проверка не заменяет визуальный прогон и физические касания на устройствах.
