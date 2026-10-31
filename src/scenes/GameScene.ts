@@ -1,9 +1,12 @@
 import Phaser from 'phaser';
 import { GRID, TRAY } from '../config/layout';
+import { DRAG } from '../config/controls';
+import { FEEDBACK } from '../config/feedback';
 import { canPlace, cloneBoard } from '../core/board';
 import { getShape } from '../core/shapes';
 import type { GameState, Placement } from '../core/types';
 import { DragController } from '../input/DragController';
+import type { DragPose } from '../input/dragGeometry';
 import { BoardRenderer } from '../rendering/BoardRenderer';
 import { Feedback } from '../rendering/Feedback';
 import { createTextures } from '../rendering/textures';
@@ -11,7 +14,7 @@ import { createTextures } from '../rendering/textures';
 export interface SceneDelegate {
   state: GameState; reducedMotion(): boolean; pixelRatio(): number; canInteract(): boolean; isTutorial(): boolean;
   onPlace(slot: number,x: number,y: number): Placement | null;
-  onPick(): void; onSettled(): void; onReady(scene: GameScene): void;
+  onPick(): void; onClearFeedback(result: Placement): void; onSettled(): void; onReady(scene: GameScene): void;
 }
 export class GameScene extends Phaser.Scene {
   private boardView!: BoardRenderer;
@@ -22,7 +25,6 @@ export class GameScene extends Phaser.Scene {
   private returning: Phaser.GameObjects.Container | null = null;
   private returningSlot = -1;
   private slot = -1;
-  private target = {x:0,y:0};
   private keyboardCell = {x:0,y:0};
   private locked = false;
   constructor(delegate: SceneDelegate) { super('Classic');this.delegate=delegate; }
@@ -32,8 +34,13 @@ export class GameScene extends Phaser.Scene {
     this.boardView=new BoardRenderer(this);this.feedback=new Feedback(this);
     this.controls=new DragController(this.game.canvas,{
       enabled:()=>this.delegate.canInteract()&&!this.locked,
-      getPiece:slot=>{const piece=this.delegate.state.tray[slot];return piece?{piece,shape:getShape(piece.shapeId)}:null;},
-      begin:(slot,x,y)=>this.begin(slot,x,y),move:(x,y,c,r)=>this.move(x,y,c,r),end:(c,r)=>this.drop(c,r),cancel:()=>this.cancelDrag(),
+      getPiece:slot=>{
+        const piece=this.delegate.state.tray[slot],transform=this.boardView.trayTransform(slot);
+        return piece&&transform?{piece,shape:getShape(piece.shapeId),transform}:null;
+      },
+      reducedMotion:()=>this.delegate.reducedMotion(),
+      preparePickup:()=>{this.cancelDrag();this.finishReturn();},
+      begin:(slot,pose)=>this.begin(slot,pose),move:pose=>this.move(pose),end:(c,r)=>this.drop(c,r),cancel:()=>this.cancelDrag(),
     });
     window.addEventListener('keydown',this.key);
     this.events.once('shutdown',()=>{this.controls.destroy();window.removeEventListener('keydown',this.key);});
@@ -47,25 +54,19 @@ export class GameScene extends Phaser.Scene {
     this.boardView.showTutorial(this.delegate.isTutorial());
   }
   cancel(): void { this.controls?.cancel();this.cancelDrag(); }
-  private begin(slot:number,x:number,y:number): void {
+  update():void{this.controls?.update();}
+  private begin(slot:number,pose:DragPose): void {
     this.cancelDrag();this.finishReturn();const piece=this.delegate.state.tray[slot];if(!piece)return;
     this.slot=slot;this.boardView.slotVisible(slot,false);
-    this.drag=this.boardView.piece(piece,getShape(piece.shapeId)).setPosition(x,y).setDepth(30).setScale(TRAY.scale).setAlpha(.96);
-    this.target={x,y};
-    this.tweens.add({targets:this.drag,scale:1,duration:this.delegate.reducedMotion()?0:130,ease:'Quad.Out'});
+    this.drag=this.boardView.piece(piece,getShape(piece.shapeId)).setPosition(pose.x,pose.y).setDepth(30).setScale(pose.scale).setAlpha(.96);
     this.delegate.onPick();
   }
-  private move(x:number,y:number,column:number,row:number): void {
-    if(!this.drag)return;this.target={x,y};
+  private move({x,y,scale,column,row}:DragPose): void {
+    if(!this.drag)return;
     const piece=this.delegate.state.tray[this.slot];if(!piece)return;
     const allowed=!this.delegate.isTutorial()||(column===5&&row===6);
-    this.boardView.showPreview(this.delegate.state.board,getShape(piece.shapeId),column,row,allowed);
-    if(this.delegate.reducedMotion())this.drag.setPosition(x,y);
-  }
-  update(_time:number,delta:number): void {
-    if(!this.drag)return;
-    const factor=1-Math.exp(-delta/24);
-    this.drag.x+=(this.target.x-this.drag.x)*factor;this.drag.y+=(this.target.y-this.drag.y)*factor;
+    const valid=this.boardView.showPreview(this.delegate.state.board,getShape(piece.shapeId),column,row,allowed);
+    this.drag.setPosition(x,y).setScale(scale).setAlpha(valid?0.98:0.86);
   }
   private drop(x:number,y:number): void {
     const slot=this.slot,piece=this.delegate.state.tray[slot];
@@ -82,8 +83,9 @@ export class GameScene extends Phaser.Scene {
     this.feedback.placement(result,piece.color,this.delegate.reducedMotion());
     if(result.cleared.length) {
       this.locked=true;
-      this.time.delayedCall(this.delegate.reducedMotion()?0:85,()=>this.feedback.clear(result,this.delegate.reducedMotion()));
-      this.time.delayedCall(this.delegate.reducedMotion()?90:300,()=>{this.boardView.render(result.state.board);this.locked=false;this.delegate.onSettled();});
+      const lead=this.delegate.reducedMotion()?0:FEEDBACK.clearLeadMs;
+      this.time.delayedCall(lead,()=>{this.delegate.onClearFeedback(result);this.feedback.clear(result,this.delegate.reducedMotion());});
+      this.time.delayedCall(lead+(this.delegate.reducedMotion()?FEEDBACK.reducedClearMs:FEEDBACK.clearDurationMs),()=>{this.boardView.render(result.state.board);this.locked=false;this.delegate.onSettled();});
     } else {
       this.feedback.points(result.points,GRID.x+x*52+26,GRID.y+y*52+12,this.delegate.reducedMotion());
       this.boardView.render(result.state.board);this.delegate.onSettled();
@@ -97,7 +99,7 @@ export class GameScene extends Phaser.Scene {
     if(this.delegate.reducedMotion()) {drag.destroy();this.boardView.slotVisible(slot,true);}
     else {
       this.finishReturn();this.returning=drag;this.returningSlot=slot;
-      this.tweens.add({targets:drag,x:TRAY.centers[slot],y:TRAY.y,scale:TRAY.scale,duration:160,ease:'Quad.Out',onComplete:()=>this.finishReturn()});
+      this.tweens.add({targets:drag,x:TRAY.centers[slot],y:TRAY.y,scale:TRAY.scale,duration:DRAG.returnDurationMs,ease:'Quad.Out',onComplete:()=>this.finishReturn()});
     }
   }
   private finishReturn():void{
@@ -111,13 +113,13 @@ export class GameScene extends Phaser.Scene {
     if(/^[123]$/.test(event.key)){
       event.preventDefault();const slot=Number(event.key)-1;
       if(!this.delegate.state.tray[slot])return;
-      this.begin(slot,TRAY.centers[slot],TRAY.y);this.keyboardCell=this.delegate.isTutorial()?{x:5,y:6}:{x:0,y:0};
+      this.begin(slot,{x:TRAY.centers[slot],y:TRAY.y,scale:TRAY.scale,column:0,row:0});this.keyboardCell=this.delegate.isTutorial()?{x:5,y:6}:{x:0,y:0};
     }else if(event.key==='Escape'){this.cancel();return;}
     else if(this.drag&&event.key==='Enter'){event.preventDefault();this.drop(this.keyboardCell.x,this.keyboardCell.y);return;}
     else if(this.drag&&event.key.startsWith('Arrow')){
       event.preventDefault();this.keyboardCell.x=Math.max(0,Math.min(7,this.keyboardCell.x+(event.key==='ArrowRight'?1:event.key==='ArrowLeft'?-1:0)));
       this.keyboardCell.y=Math.max(0,Math.min(7,this.keyboardCell.y+(event.key==='ArrowDown'?1:event.key==='ArrowUp'?-1:0)));
     }else return;
-    if(this.drag){const piece=this.delegate.state.tray[this.slot]!,s=getShape(piece.shapeId),{x,y}=this.keyboardCell;this.move(GRID.x+(x+s.width/2)*52,GRID.y+(y+s.height/2)*52,x,y);}
+    if(this.drag){const piece=this.delegate.state.tray[this.slot]!,s=getShape(piece.shapeId),{x,y}=this.keyboardCell;this.move({x:GRID.x+(x+s.width/2)*GRID.cell,y:GRID.y+(y+s.height/2)*GRID.cell,scale:1,column:x,row:y});}
   };
 }

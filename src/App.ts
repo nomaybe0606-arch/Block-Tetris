@@ -59,9 +59,12 @@ export class App implements SceneDelegate {
       this.profile.best=Math.max(this.profile.best,this.state.best);this.profile.maxCombo=Math.max(this.profile.maxCombo,this.state.maxCombo);
       this.profile.totalLines+=result.rows.length+result.columns.length;this.profile.game=this.state;this.save();
     }
-    if(result.cleared.length)this.audio.play(this.state.combo>1?'combo':'clear');else this.audio.play('place');
+    this.audio.play('place');
     if(!this.training&&!this.recordAnnounced&&this.state.score>this.recordTarget){this.recordAnnounced=true;this.audio.play('record');}
     this.render(true);return result;
+  }
+  onClearFeedback(result:Placement):void{
+    this.audio.play(result.state.combo>1||result.rows.length+result.columns.length>1?'combo':'clear');
   }
   onSettled():void{
     this.settled=true;

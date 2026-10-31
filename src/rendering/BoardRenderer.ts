@@ -3,6 +3,7 @@ import { GRID, TRAY } from '../config/layout';
 import { canPlace, cloneBoard, findLines, hasMove } from '../core/board';
 import { getShape } from '../core/shapes';
 import type { Board, GameState, Piece, Shape } from '../core/types';
+import type { PieceTransform } from '../input/dragGeometry';
 
 export class BoardRenderer {
   readonly root: Phaser.GameObjects.Container;
@@ -51,8 +52,12 @@ export class BoardRenderer {
   }
   piece(piece: Piece, shape: Shape): Phaser.GameObjects.Container {
     const container = this.scene.add.container();
-    for (const [x,y] of shape.cells) container.add(this.scene.add.image((x-(shape.width-1)/2)*52, (y-(shape.height-1)/2)*52, `block-${piece.color}`).setDisplaySize(49,49));
+    for (const [x,y] of shape.cells) container.add(this.scene.add.image((x-(shape.width-1)/2)*GRID.cell, (y-(shape.height-1)/2)*GRID.cell, `block-${piece.color}`).setDisplaySize(GRID.cell-3,GRID.cell-3));
     return container;
+  }
+  trayTransform(index: number): PieceTransform | null {
+    const piece=this.slots[index];
+    return piece?.visible&&piece.alpha>0?{x:piece.x,y:piece.y,scale:piece.scaleX}:null;
   }
   slotVisible(index: number, visible: boolean): void { this.slots[index]?.setVisible(visible); }
   clearPreview(): void { this.preview.clear(); }

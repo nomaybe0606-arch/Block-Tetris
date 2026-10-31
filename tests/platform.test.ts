@@ -7,6 +7,7 @@ const fake=vi.hoisted(()=>({
 }));
 vi.mock('@playgama/bridge',()=>({default:fake}));
 import { MemoryPlatform, PlatformService } from '../src/platform/PlatformService';
+import bridgeConfig from '../public/playgama-bridge-config.json';
 
 beforeEach(()=>{
   vi.resetAllMocks();fake.initialize.mockResolvedValue(undefined);fake.storage.get.mockResolvedValue([null]);fake.storage.set.mockResolvedValue(undefined);fake.platform.sendMessage.mockResolvedValue(undefined);
@@ -14,6 +15,11 @@ beforeEach(()=>{
   vi.stubGlobal('document',{hidden:false,addEventListener:vi.fn()});vi.spyOn(console,'warn').mockImplementation(()=>{});
 });
 describe('Bridge integration boundary',()=>{
+  it('disables only the SDK loading visuals using supported config, preserving initialization and ready',async()=>{
+    expect(bridgeConfig.disableLoadingLogo).toBe(true);expect(bridgeConfig.loadingScreenType).toBe('none');
+    const platform=new PlatformService();await platform.initialize();platform.message('game_ready');
+    expect(fake.initialize).toHaveBeenCalledTimes(1);expect(fake.platform.sendMessage).toHaveBeenCalledWith('game_ready');
+  });
   it('initializes, loads and saves through Bridge only',async()=>{
     const p=new PlatformService();await p.initialize();expect(p.language).toBe('ru');
     fake.storage.get.mockResolvedValue(['saved']);expect(await p.load()).toBe('saved');await p.save('next');

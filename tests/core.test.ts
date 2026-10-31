@@ -6,7 +6,6 @@ import { SeededRng } from '../src/core/rng';
 import { getShape, SHAPES } from '../src/core/shapes';
 import { restoreGame, serializeGame } from '../src/core/serialization';
 import { defaultProfile, restoreProfile } from '../src/platform/profile';
-import { pointerAnchor } from '../src/input/DragController';
 import type { GameState } from '../src/core/types';
 
 function single(state=newGame(123)):GameState {
@@ -156,13 +155,5 @@ describe('save validation and deterministic continuation',()=>{
     const defaults=defaultProfile('ru',true);const result=restoreProfile(JSON.stringify({...defaults,best:700,game:{version:7},settings:{sound:false,language:'xx',music:'no'}}),defaults);
     expect(result.best).toBe(700);expect(result.game).toBeNull();expect(result.settings.sound).toBe(false);expect(result.settings.music).toBe(true);expect(result.settings.language).toBe('ru');
     expect(defaultProfile('de',false).settings.language).toBe('en');
-  });
-});
-describe('pointer positioning',()=>{
-  it('anchors a mouse-centered square to the exact board cell',()=>{
-    expect(pointerAnchor(32+3*52+52,230+2*52+52,getShape('square-2'),false)).toEqual({x:240,y:386,column:3,row:2});
-  });
-  it('lifts touch pieces by 88 logical pixels and accounts for shape dimensions',()=>{
-    const a=pointerAnchor(32+5*52+78,230+6*52+26+88,getShape('line-3-h'),true);expect(a.column).toBe(5);expect(a.row).toBe(6);expect(a.y).toBe(568);
   });
 });

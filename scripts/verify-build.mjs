@@ -40,6 +40,8 @@ for (const source of files(resolve('public'))) {
 const configUrl = new URL('./playgama-bridge-config.json', documentUrl);
 const config = JSON.parse(readFileSync(localPath(configUrl.href), 'utf8'));
 assert.equal(config.advertisement.minimumDelayBetweenInterstitial, 60);
+assert.equal(config.disableLoadingLogo, true, 'Bridge branding must be disabled officially');
+assert.equal(config.loadingScreenType, 'none', 'Use only the Grid Pulse loading screen');
 for (const name of ['ambient', 'pick', 'place', 'clear', 'combo', 'record', 'ui']) {
   const ogg = readFileSync(join(root, `assets/audio/${name}.ogg`));
   assert.equal(ogg.toString('ascii', 0, 4), 'OggS');
