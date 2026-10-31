@@ -1,0 +1,7 @@
+{
+  "advertisement": {
+    "minimumDelayBetweenInterstitial": 60,
+    "interstitial": { "placementFallback": "game_over" }
+  },
+  "platforms": {}
+}
