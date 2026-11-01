@@ -1,4 +1,5 @@
 const paths: Record<string, string> = {
+  video:'<rect x="3" y="5" width="18" height="14" rx="4"/><path d="m10 9 5 3-5 3V9Z"/>',
   settings: '<path d="m9.2 3-.6 2.1-1.8 1L4.7 6 3 9l1.5 1.6v2.8L3 15l1.7 3 2.1-.2 1.8 1 .6 2.2h3.6l.6-2.2 1.8-1 2.1.2 1.7-3-1.5-1.6v-2.8L19 9l-1.7-3-2.1.1-1.8-1-.6-2.1Z"/><circle cx="11" cy="12" r="3"/>',
   trophy: '<path d="M7 3h10v5c0 4-2 6-5 6S7 12 7 8V3Zm0 2H3v2c0 3 2 4 5 4m9-6h4v2c0 3-2 4-5 4M12 14v5m-5 2h10m-8-2h6"/>',
   arrow: '<path d="M5 12h14m-6-6 6 6-6 6"/>',

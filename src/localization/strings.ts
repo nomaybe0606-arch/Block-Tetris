@@ -1,5 +1,6 @@
 export const strings = {
   en: {
+    swapTitle:'Swap a piece',swapHelp:'Choose one piece. The proposed replacement is guaranteed to fit.',swapButton:'Swap piece',choosePiece:'Choose piece',fitsAt:'Fits at row · column',noAlternative:'No different piece can fit on this board.',watchSwap:'Watch ad & swap',cancelSwap:'Cancel',adLoading:'Waiting for the ad…',adUnavailable:'No ad available. Your swap was not used.',adCancelled:'Ad closed. Your swap was not used.',saveRequired:'Saving is unavailable. No ad was requested.',retrySave:'Retry saving',rewardSaveError:'Reward received. Keep this tab open and retry saving.',effects:'Intense effects',swapDone:'New piece ready',
     classic: 'CLASSIC', best: 'PERSONAL BEST', score: 'SCORE', lines: 'LINES',
     menuEyebrow: 'A LITTLE SPACE. A LITTLE STRATEGY.', menuTitle: 'Find your flow.',
     menuDescription: 'Make room for your next great move.', play: 'Let’s play', continue: 'Continue game', newGame: 'New game',
@@ -18,6 +19,7 @@ export const strings = {
     paused: 'Take a breath.', pausedHelp: 'Your game is paused.', keyboard: 'Keyboard: 1–3 select · arrows move · Enter place · Esc cancel',
   },
   ru: {
+    swapTitle:'Заменить фигуру',swapHelp:'Выбери одну фигуру. Предложенная замена гарантированно помещается.',swapButton:'Заменить фигуру',choosePiece:'Выбрать фигуру',fitsAt:'Подходит: строка · столбец',noAlternative:'На поле не помещается ни одна другая фигура.',watchSwap:'Смотреть рекламу и заменить',cancelSwap:'Отмена',adLoading:'Ожидаем рекламу…',adUnavailable:'Реклама недоступна. Замена не израсходована.',adCancelled:'Реклама закрыта. Замена не израсходована.',saveRequired:'Сохранение недоступно. Реклама не запрашивалась.',retrySave:'Повторить сохранение',rewardSaveError:'Награда получена. Не закрывай вкладку и повтори сохранение.',effects:'Яркие эффекты',swapDone:'Новая фигура готова',
     classic: 'КЛАССИКА', best: 'ЛИЧНЫЙ РЕКОРД', score: 'СЧЁТ', lines: 'ЛИНИИ',
     menuEyebrow: 'НЕМНОГО МЕСТА. НЕМНОГО СТРАТЕГИИ.', menuTitle: 'Поймай свой ритм.',
     menuDescription: 'Освободи место для красивого хода.', play: 'Начать игру', continue: 'Продолжить', newGame: 'Новая игра',

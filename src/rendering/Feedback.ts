@@ -2,10 +2,11 @@ import type Phaser from 'phaser';
 import { GRID } from '../config/layout';
 import { FEEDBACK } from '../config/feedback';
 import type { Placement } from '../core/types';
+import type { NeonEffects } from './NeonEffects';
 
 export class Feedback {
   private callout: Phaser.GameObjects.Text | null = null;
-  constructor(private scene: Phaser.Scene) {}
+  constructor(private scene: Phaser.Scene,private neon?:NeonEffects) {}
   placement(result: Placement, color: number, reduced: boolean): void {
     if (reduced) return;
     for (const [x,y] of result.placed) {
@@ -26,6 +27,7 @@ export class Feedback {
       const particles=Math.min(result.cleared.length*2,multi?FEEDBACK.multiLineParticles:FEEDBACK.singleLineParticles);
       for(let i=0;i<particles;i++) {
         const [x,y]=result.cleared[Math.floor(i*result.cleared.length/particles)];
+        if(this.neon){this.neon.emit(GRID.x+x*52+26,GRID.y+y*52+26,color,1);continue;}
         const p=this.scene.add.image(GRID.x+x*52+26,GRID.y+y*52+26,'particle').setDepth(13);
         // Cosmetic randomness is independent from the deterministic game RNG.
         p.setTint([0x98fff0,0xb6a4ff,0xffffff][i%3]).setScale(0.6+(i%3)*0.2);
@@ -37,6 +39,7 @@ export class Feedback {
     if(this.callout){this.scene.tweens.killTweensOf(this.callout);this.callout.destroy();}
     const text=this.scene.add.text(240,400,`${label}\n+${result.points}${combo}`,{fontFamily:'Trebuchet MS, sans-serif',fontSize:multi||result.state.combo>1?'28px':'24px',fontStyle:'bold',color:multi?'#e9e1ff':'#d5fff2',align:'center',stroke:'#15243d',strokeThickness:4}).setOrigin(.5).setDepth(20);
     this.callout=text;
+    if(!reduced&&this.neon){text.setScale(.94);this.scene.tweens.add({targets:text,scale:1,duration:100,ease:'Back.Out'});}
     this.scene.tweens.add({targets:text,y:reduced?400:378,alpha:0,delay:FEEDBACK.calloutHoldMs,duration:reduced?100:FEEDBACK.calloutFadeMs,onComplete:()=>{if(this.callout===text)this.callout=null;text.destroy();}});
   }
   private lineLight(x:number,y:number,horizontal:boolean,color:number,multi:boolean):void{

@@ -3,7 +3,8 @@
   "loadingScreenType": "none",
   "advertisement": {
     "minimumDelayBetweenInterstitial": 60,
-    "interstitial": { "placementFallback": "game_over" }
+    "interstitial": { "placementFallback": "game_over" },
+    "rewarded": { "placementFallback": "piece_swap", "placements": [{ "id": "piece_swap" }] }
   },
   "platforms": {}
 }

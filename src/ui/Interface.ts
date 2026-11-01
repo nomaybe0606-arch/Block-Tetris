@@ -2,11 +2,15 @@ import { strings, type Copy } from '../localization/strings';
 import type { GameState } from '../core/types';
 import type { Profile } from '../platform/profile';
 import { icon, logo } from './icons';
+import { swapModal, type SwapUI } from './SwapModal';
+import { ANIMATION } from '../config/animation';
+import { MONETIZATION } from '../config/monetization';
 
 export type Screen = 'menu' | 'game' | 'tutorial';
-export type Modal = 'settings' | 'restart' | 'over' | 'tutorial-success' | null;
+export type Modal = 'settings' | 'restart' | 'over' | 'tutorial-success' | 'swap' | null;
 export interface UIModel {
   screen: Screen; modal: Modal; state: GameState; profile: Profile; paused: boolean; storageAvailable: boolean;
+  swap:SwapUI;
 }
 const number = (n: number) => n.toLocaleString('en-US').replaceAll(',', ' ');
 const action = (id: string, label: string, cls = 'secondary', glyph = '') => `<button type="button" class="${cls}" data-action="${id}">${glyph ? icon(glyph) : ''}<span>${label}</span>${cls.includes('primary') ? icon('arrow') : ''}</button>`;
@@ -18,6 +22,7 @@ export class Interface {
   private scoreValue = 0;
   private priorFocus: HTMLElement | null = null;
   private hadModal = false;
+  private lastScreen:Screen|null=null;
   constructor(private onAction: (action: string) => void, private onSetting: (key: string, value: boolean | string) => void) {
     this.root.addEventListener('click', e => {
       const button = (e.target as Element).closest<HTMLButtonElement>('[data-action]');
@@ -32,7 +37,7 @@ export class Interface {
       if(!dialog)return;
       if(e.key==='Escape'&&dialog.dataset.dismissible==='true'){e.preventDefault();this.onAction('close');}
       if(e.key==='Tab'){
-        const controls=Array.from(dialog.querySelectorAll<HTMLElement>('button, input, select'));
+        const controls=Array.from(dialog.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled)'));
         const first=controls[0],last=controls[controls.length-1];
         if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}
         else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
@@ -44,8 +49,11 @@ export class Interface {
     const c:Copy=strings[model.profile.settings.language];
     document.documentElement.lang=model.profile.settings.language;
     document.querySelector('#frame')!.classList.toggle('reduced-motion',model.profile.settings.reducedMotion);
+    document.querySelector('#frame')!.classList.toggle('low-effects',!model.profile.settings.intenseEffects);
     if(model.modal&&!this.hadModal)this.priorFocus=document.activeElement as HTMLElement;
     this.root.innerHTML=model.screen==='menu'?this.menu(model,c):this.game(model,c);
+    if(this.lastScreen!==model.screen&&!model.profile.settings.reducedMotion)this.root.firstElementChild?.animate([{opacity:0,transform:'translateY(5px)'},{opacity:1,transform:'translateY(0)'}],{duration:ANIMATION.modalMs,easing:'ease-out'});
+    this.lastScreen=model.screen;
     if(model.modal)this.root.insertAdjacentHTML('beforeend',this.modal(model,c));
     if(model.paused)this.root.insertAdjacentHTML('beforeend',`<div class="pause-screen"><div class="pause-orbit">${icon('moon')}</div><h2>${c.paused}</h2><p>${c.pausedHelp}</p></div>`);
     if(model.modal&&!this.hadModal)requestAnimationFrame(()=>this.root.querySelector<HTMLElement>('[role="dialog"] button, [role="dialog"] input')?.focus());
@@ -76,7 +84,7 @@ export class Interface {
       <div class="record-pill">${icon('trophy')}<span>${c.best}</span><strong id="best-value">${number(training?m.profile.best:m.state.best)}</strong></div>
       <div class="board-meta"><span><i></i>${c.classic} <b>8 × 8</b></span><span>${m.state.combo>1?`<em>${c.combo} ${Math.min(8,m.state.combo)}×</em>`:`${c.lines} <strong>${m.state.lines}</strong>`}</span></div>
       <div class="tray-label"><span></span>${training?c.tutorialHint:c.tray}<span></span></div>
-      <div class="game-footer">${training?c.tutorialHelp:c.dragHint}</div>
+      ${m.swap.visible?`<button class="swap-button" data-action="swap" ${m.swap.remaining===0?'disabled':''}>${icon('video')}<span>${c.swapButton}</span><b>${m.swap.remaining}/${MONETIZATION.maxSwapsPerGame}</b></button>`:`<div class="game-footer">${training?c.tutorialHelp:c.dragHint}</div>`}
       ${training?action('skip',c.skip,'tutorial-skip'):''}
       <div class="storage-status ${m.storageAvailable?'':'storage-error'}" role="status">${m.storageAvailable?'':c.savingError}</div>
       <span class="sr-only">${c.keyboard}</span>
@@ -87,9 +95,11 @@ export class Interface {
     if(m.modal==='settings') {
       const toggle=(key:string,title:string,glyph:string,help='')=>`<label class="setting-row"><span class="setting-icon">${icon(glyph)}</span><span class="setting-title">${title}${help?`<small>${help}</small>`:''}</span><input type="checkbox" role="switch" data-setting="${key}" ${(m.profile.settings[key as keyof typeof m.profile.settings])?'checked':''}/><span class="switch" aria-hidden="true"></span></label>`;
       body=`<div class="modal-heading"><div><p class="eyebrow">GRID PULSE</p><h2>${c.settings}</h2></div>${iconButton('close',c.close,'close')}</div>
-        <div class="settings-list">${toggle('sound',c.sound,'sound')}${toggle('music',c.music,'music')}${toggle('mute',c.mute,'sound')}${toggle('reducedMotion',c.motion,'moon',c.motionHelp)}
+        <div class="settings-list">${toggle('sound',c.sound,'sound')}${toggle('music',c.music,'music')}${toggle('mute',c.mute,'sound')}${toggle('reducedMotion',c.motion,'moon',c.motionHelp)}${toggle('intenseEffects',c.effects,'sparkle')}
         <label class="setting-row"><span class="setting-icon">${icon('globe')}</span><span class="setting-title">${c.language}</span><select data-setting="language" aria-label="${c.language}"><option value="en" ${m.profile.settings.language==='en'?'selected':''}>English</option><option value="ru" ${m.profile.settings.language==='ru'?'selected':''}>Русский</option></select></label></div>
         ${action('close',c.close,'primary')}${m.screen==='game'?`<div class="settings-actions">${action('new',c.newGame,'text-button','restart')}${action('home',c.home,'text-button','home')}</div>`:''}`;
+    } else if(m.modal==='swap') {
+      body=swapModal(m.state,m.swap,c);
     } else if(m.modal==='restart') {
       body=`<div class="modal-symbol">${icon('restart')}</div><h2>${c.restart}</h2><p class="modal-description">${c.restartHelp}</p>${action('confirm-new',c.confirm,'primary')}${action('close',c.cancel,'secondary')}`;
     } else if(m.modal==='tutorial-success') {
@@ -100,7 +110,7 @@ export class Interface {
       <div class="result-details"><span>${c.lines} <b>${m.state.lines}</b></span><span>${c.maxCombo} <b>${m.state.maxCombo}×</b></span></div>
       ${action('confirm-new',c.again,'primary')}${action('home',c.home,'secondary')}`;
     }
-    return `<div class="modal-backdrop"><section role="dialog" aria-modal="true" aria-label="${m.modal==='settings'?c.settings:m.modal==='restart'?c.restart:m.modal==='over'?c.noMoves:c.tutorialSuccess}" data-dismissible="${m.modal==='settings'||m.modal==='restart'}" class="modal ${m.modal==='settings'?'settings-modal':''}">${body}</section></div>`;
+    return `<div class="modal-backdrop"><section role="dialog" aria-modal="true" aria-label="${m.modal==='settings'?c.settings:m.modal==='swap'?c.swapTitle:m.modal==='restart'?c.restart:m.modal==='over'?c.noMoves:c.tutorialSuccess}" data-dismissible="${m.modal==='settings'||m.modal==='restart'||(m.modal==='swap'&&!m.swap.busy&&!m.swap.savePending)}" class="modal ${m.modal==='settings'?'settings-modal':''}">${body}</section></div>`;
   }
   private animateScore(target:number,animate:boolean):void {
     cancelAnimationFrame(this.scoreFrame);
@@ -111,5 +121,17 @@ export class Interface {
       element.textContent=number(value);this.scoreValue=value;
       if(progress<1)this.scoreFrame=requestAnimationFrame(step);
     };this.scoreFrame=requestAnimationFrame(step);
+  }
+  closeDialog(reduced:boolean,done:()=>void):void{
+    const dialog=this.root.querySelector<HTMLElement>('[role="dialog"]');
+    if(!dialog||reduced){done();return;}
+    void dialog.animate([{opacity:1,transform:'scale(1)'},{opacity:0,transform:'translateY(6px) scale(.98)'}],{duration:ANIMATION.modalMs*.65,easing:'ease-in',fill:'forwards'}).finished.then(done,done);
+  }
+  record(reduced:boolean):void{
+    if(reduced)return;
+    requestAnimationFrame(()=>{
+      const trophy=this.root.querySelector<HTMLElement>('.record-pill');
+      trophy?.animate([{filter:'drop-shadow(0 0 0 #f7cb70)',transform:'scale(1)'},{filter:'drop-shadow(0 0 12px #f7cb70)',transform:'scale(1.08)'},{filter:'drop-shadow(0 0 0 #f7cb70)',transform:'scale(1)'}],{duration:ANIMATION.recordMs,easing:'ease-out'});
+    });
   }
 }

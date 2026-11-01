@@ -42,6 +42,8 @@ const config = JSON.parse(readFileSync(localPath(configUrl.href), 'utf8'));
 assert.equal(config.advertisement.minimumDelayBetweenInterstitial, 60);
 assert.equal(config.disableLoadingLogo, true, 'Bridge branding must be disabled officially');
 assert.equal(config.loadingScreenType, 'none', 'Use only the Grid Pulse loading screen');
+assert.equal(config.advertisement.rewarded.placementFallback, 'piece_swap');
+assert(config.advertisement.rewarded.placements.some(placement => placement.id === 'piece_swap'));
 for (const name of ['ambient', 'pick', 'place', 'clear', 'combo', 'record', 'ui']) {
   const ogg = readFileSync(join(root, `assets/audio/${name}.ogg`));
   assert.equal(ogg.toString('ascii', 0, 4), 'OggS');
@@ -53,6 +55,8 @@ for (const name of ['ambient', 'pick', 'place', 'clear', 'combo', 'record', 'ui'
 
 const scripts = files(join(root, 'assets')).filter(path => path.endsWith('.js'));
 const appCode = scripts.map(path => readFileSync(path, 'utf8')).join('\n');
+assert(!/GRID_PULSE_DEV_REWARDED_ONLY|DevRewardedPlatform|DEV SDK error/.test(appCode), 'DEV rewarded mock leaked into production');
+assert(!scripts.some(path => path.includes('DevRewarded')), 'DEV rewarded chunk leaked into production');
 assert(appCode.includes(`${base}assets/audio/ambient.`), 'Music URL does not use BASE_URL');
 assert(appCode.includes(`${base}assets/audio/`), 'Effect URLs do not use BASE_URL');
 // Validate emitted module references relative to the chunk that imports them.

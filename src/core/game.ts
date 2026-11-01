@@ -10,11 +10,11 @@ export function isGameOver(state: Pick<GameState, 'board' | 'tray'>): boolean {
 }
 export function newGame(seed: number, best = 0): GameState {
   const rng = new SeededRng(seed), board = emptyBoard(), tray = generateTray(board, rng);
-  return { version: 1, board, tray, score: 0, best, combo: 0, misses: 0, maxCombo: 0, lines: 0, moves: 0, rng: rng.state, over: false };
+  return { version: 2, id: `game-${seed>>>0}`, swapsUsed: 0, swapOperation: null, board, tray, score: 0, best, combo: 0, misses: 0, maxCombo: 0, lines: 0, moves: 0, rng: rng.state, over: false };
 }
 export function placePiece(state: GameState, slot: number, x: number, y: number): Placement | null {
   const piece = state.tray[slot];
-  if (!piece || state.over) return null;
+  if (!piece || state.over || state.swapOperation?.status === 'pending') return null;
   const shape = getShape(piece.shapeId);
   if (!canPlace(state.board, shape, x, y)) return null;
   const board = cloneBoard(state.board), placed = shape.cells.map(([dx,dy]) => [x+dx, y+dy] as Cell);
@@ -26,7 +26,7 @@ export function placePiece(state: GameState, slot: number, x: number, y: number)
   const tray = [...state.tray]; tray[slot] = null;
   const rng = new SeededRng(state.rng);
   const next: GameState = {
-    ...state, board: clear.board, tray: tray.every(p => p === null) ? generateTray(clear.board, rng) : tray,
+    ...state, swapOperation: null, board: clear.board, tray: tray.every(p => p === null) ? generateTray(clear.board, rng) : tray,
     score: state.score + points, best: Math.max(state.best, state.score + points), combo, misses,
     maxCombo: Math.max(state.maxCombo, combo), lines: state.lines + count, moves: state.moves + 1, rng: rng.state,
   };

@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const fake=vi.hoisted(()=>({
   initialize:vi.fn(),storage:{get:vi.fn(),set:vi.fn()},
-  platform:{language:'ru',isAudioEnabled:true,isPaused:false,sendMessage:vi.fn(),on:vi.fn()},
-  advertisement:{interstitialState:'closed',isInterstitialSupported:true,showInterstitial:vi.fn(),on:vi.fn()},
-  EVENT_NAME:{AUDIO_STATE_CHANGED:'audio',PAUSE_STATE_CHANGED:'pause',INTERSTITIAL_STATE_CHANGED:'ad'},
+  platform:{id:'yandex',language:'ru',isAudioEnabled:true,isPaused:false,sendMessage:vi.fn(),on:vi.fn()},
+  advertisement:{interstitialState:'closed',rewardedState:'closed',isRewardedSupported:true,isInterstitialSupported:true,showRewarded:vi.fn(),showInterstitial:vi.fn(),on:vi.fn(),off:vi.fn()},
+  EVENT_NAME:{AUDIO_STATE_CHANGED:'audio',PAUSE_STATE_CHANGED:'pause',INTERSTITIAL_STATE_CHANGED:'ad',REWARDED_STATE_CHANGED:'reward'},
 }));
 vi.mock('@playgama/bridge',()=>({default:fake}));
 import { MemoryPlatform, PlatformService } from '../src/platform/PlatformService';
@@ -12,7 +12,49 @@ import bridgeConfig from '../public/playgama-bridge-config.json';
 beforeEach(()=>{
   vi.resetAllMocks();fake.initialize.mockResolvedValue(undefined);fake.storage.get.mockResolvedValue([null]);fake.storage.set.mockResolvedValue(undefined);fake.platform.sendMessage.mockResolvedValue(undefined);
   fake.platform.isAudioEnabled=true;fake.platform.isPaused=false;fake.advertisement.interstitialState='closed';fake.advertisement.isInterstitialSupported=true;
+  fake.platform.id='yandex';fake.advertisement.rewardedState='closed';fake.advertisement.isRewardedSupported=true;
+  vi.stubGlobal('location',{hostname:'localhost'});
   vi.stubGlobal('document',{hidden:false,addEventListener:vi.fn()});vi.spyOn(console,'warn').mockImplementation(()=>{});
+});
+
+describe('rewarded Bridge lifecycle',()=>{
+  it('waits for all queued saves at a durable checkpoint',async()=>{
+    let firstDone!:()=>void,secondDone!:()=>void;
+    fake.storage.set.mockImplementationOnce(()=>new Promise<void>(r=>{firstDone=r;})).mockImplementationOnce(()=>new Promise<void>(r=>{secondDone=r;}));
+    const p=new PlatformService();await p.initialize();const first=p.save('old');let settled=false;
+    const checkpoint=p.checkpoint('reward').then(value=>{settled=true;return value;});
+    await Promise.resolve();expect(settled).toBe(false);firstDone();await Promise.resolve();await Promise.resolve();
+    expect(fake.storage.set).toHaveBeenLastCalledWith(['grid-pulse-v1'],['reward']);expect(settled).toBe(false);
+    secondDone();await first;expect(await checkpoint).toBe(true);
+  });
+  it('pauses during rewarded, preserves host pause/audio and resumes only when all permit',async()=>{
+    const p=new PlatformService();await p.initialize();const reward=vi.fn(),result=p.showRewarded(reward);
+    expect(fake.advertisement.showRewarded).toHaveBeenCalledWith('piece_swap');expect(p.paused).toBe(true);
+    const globalAd=fake.advertisement.on.mock.calls.filter(([event])=>event==='reward')[0][1];
+    const operation=fake.advertisement.on.mock.calls.filter(([event])=>event==='reward')[1][1];
+    const host=new Map<string,(value:boolean)=>void>(fake.platform.on.mock.calls.map(([event,callback])=>[event,callback]));
+    globalAd('opened');operation('opened');host.get('audio')!(false);host.get('pause')!(true);
+    globalAd('rewarded');operation('rewarded');globalAd('closed');operation('closed');
+    expect(await result).toBe('rewarded');expect(reward).toHaveBeenCalledTimes(1);expect(p.paused).toBe(true);expect(p.audioEnabled).toBe(false);
+    host.get('pause')!(false);expect(p.paused).toBe(false);expect(p.audioEnabled).toBe(false);
+    host.get('audio')!(true);expect(p.audioEnabled).toBe(true);expect(fake.advertisement.off).toHaveBeenCalledTimes(1);
+  });
+  it('suppresses rewarded on public Pages and on the Bridge fallback',async()=>{
+    const p=new PlatformService();await p.initialize();vi.stubGlobal('location',{hostname:'nomaybe0606-arch.github.io'});
+    expect(p.rewardedSupported).toBe(false);expect(await p.showRewarded(()=>{})).toBe('unavailable');
+    vi.stubGlobal('location',{hostname:'localhost'});fake.platform.id='mock';expect(p.rewardedSupported).toBe(false);
+    expect(fake.advertisement.showRewarded).not.toHaveBeenCalled();
+  });
+  it('deduplicates game over and skips interstitial immediately after rewarded',async()=>{
+    const p=new PlatformService();await p.initialize();p.gameOver('one');p.gameOver('one');expect(fake.advertisement.showInterstitial).toHaveBeenCalledTimes(1);
+    const result=p.showRewarded(()=>{});fake.advertisement.on.mock.calls.filter(([event])=>event==='reward')[1][1]('closed');await result;
+    p.gameOver('two');expect(fake.advertisement.showInterstitial).toHaveBeenCalledTimes(1);
+    p.gameplayAction();p.gameOver('three');expect(fake.advertisement.showInterstitial).toHaveBeenCalledTimes(2);
+  });
+  it('refuses rewarded while another ad is open',async()=>{
+    fake.advertisement.rewardedState='opened';const p=new PlatformService();await p.initialize();
+    expect(await p.showRewarded(()=>{})).toBe('busy');expect(fake.advertisement.showRewarded).not.toHaveBeenCalled();expect(p.paused).toBe(true);
+  });
 });
 describe('Bridge integration boundary',()=>{
   it('disables only the SDK loading visuals using supported config, preserving initialization and ready',async()=>{
