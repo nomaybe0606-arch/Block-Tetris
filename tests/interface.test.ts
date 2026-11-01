@@ -76,4 +76,30 @@ describe('stable game interface',()=>{
     expect(record.classList.contains('record-active')).toBe(true);model.state={...model.state,score:144};ui.render(model,true);
     expect(document.querySelector('.record-pill')).toBe(record);expect(record.classList.contains('record-active')).toBe(true);
   });
+  it('does not start a queued record celebration after Reduced Motion is enabled',()=>{
+    const {ui,model}=setup();ui.record(false);model.profile.settings.reducedMotion=true;ui.render(model);tick(16);
+    expect(document.querySelector('.record-active')).toBeNull();expect(frames.size).toBe(0);
+  });
+  it('cancels a queued record from a previous game even when the HUD stays mounted',()=>{
+    const {ui,model}=setup(),record=document.querySelector('.record-pill');ui.record(false);
+    model.state=newGame(2);ui.render(model);tick(16);
+    expect(document.querySelector('.record-pill')).toBe(record);expect(document.querySelector('.record-active')).toBeNull();
+  });
+  it('cancels an active celebration when intense effects are disabled',()=>{
+    const {ui,model}=setup();ui.record(false);tick(16);expect(document.querySelector('.record-active')).not.toBeNull();
+    model.profile.settings.intenseEffects=false;ui.render(model);
+    expect(document.querySelector('.record-active')).toBeNull();expect(cancelMotion).toHaveBeenCalled();
+  });
+  it('stops the detached HUD counter on returning to the menu',()=>{
+    const {ui,model}=setup();model.state={...model.state,score:144};ui.render(model,true);expect(frames.size).toBe(1);
+    model.screen='menu';ui.render(model);expect(frames.size).toBe(0);tick(240);expect(frames.size).toBe(0);
+  });
+  it('keeps Tab inside a busy rewarded dialog with all controls disabled',()=>{
+    const {ui,model}=setup();model.modal='swap';model.swap.busy=true;ui.render(model);tick(16);
+    const event=new dom.KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true});dom.document.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);expect(document.activeElement).toBe(document.querySelector('[role="dialog"]'));
+    model.swap.busy=false;ui.render(model);
+    const reverse=new dom.KeyboardEvent('keydown',{key:'Tab',shiftKey:true,bubbles:true,cancelable:true});dom.document.dispatchEvent(reverse);
+    expect(reverse.defaultPrevented).toBe(true);expect(document.activeElement).toBe(document.querySelector('[role="dialog"] [data-action="close"]'));
+  });
 });

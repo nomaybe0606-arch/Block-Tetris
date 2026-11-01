@@ -31,6 +31,11 @@ export class Interface {
   private screenKey='';private modalKey='';private modalMarkup='';private pauseKey='';
   private fragments=new WeakMap<Element,string>();
   private animations=new Set<Animation>();
+  private recordFrame=0;
+  private recordScope='';
+  private effectsEnabled=true;
+  private recordAnimation:Animation|null=null;
+  private recordNode:HTMLElement|null=null;
   constructor(private onAction: (action: string) => void, private onSetting: (key: string, value: boolean | string) => void) {
     for(const host of [this.screenRoot,this.dialogRoot,this.pauseRoot]){host.className='ui-host';this.root.append(host);}
     this.root.addEventListener('click', e => {
@@ -48,6 +53,8 @@ export class Interface {
       if(e.key==='Tab'){
         const controls=Array.from(dialog.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled)'));
         const first=controls[0],last=controls[controls.length-1];
+        if(!first){e.preventDefault();dialog.tabIndex=-1;dialog.focus();return;}
+        if(!dialog.contains(document.activeElement)||document.activeElement===dialog){e.preventDefault();(e.shiftKey?last:first).focus();return;}
         if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}
         else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
       }
@@ -59,11 +66,16 @@ export class Interface {
     document.documentElement.lang=model.profile.settings.language;
     document.querySelector('#frame')!.classList.toggle('reduced-motion',model.profile.settings.reducedMotion);
     document.querySelector('#frame')!.classList.toggle('low-effects',!model.profile.settings.intenseEffects);
+    this.effectsEnabled=!model.profile.settings.reducedMotion&&model.profile.settings.intenseEffects;
+    const recordScope=`${model.screen}:${model.state.id}:${model.profile.settings.language}`;
+    if(recordScope!==this.recordScope||!this.effectsEnabled)this.cancelRecord();
+    this.recordScope=recordScope;
     if(model.profile.settings.reducedMotion){for(const animation of this.animations)animation.cancel();this.animations.clear();this.root.querySelector('.record-active')?.classList.remove('record-active');}
     if(model.modal&&!this.hadModal)this.priorFocus=document.activeElement as HTMLElement;
     const menuKey=model.screen==='menu'?`:${model.profile.best}:${model.profile.totalLines}:${model.profile.maxCombo}:${!!(model.profile.game&&!model.profile.game.over)}`:'';
     const screenKey=`${model.screen}:${model.profile.settings.language}${menuKey}`;
     if(screenKey!==this.screenKey){
+      cancelAnimationFrame(this.scoreFrame);this.scoreFrame=0;this.scoreNode=null;this.scoreTarget=-1;
       this.screenRoot.innerHTML=model.screen==='menu'?this.menu(model,c):this.game(model,c);this.screenKey=screenKey;
       if(this.lastScreen!==model.screen&&!model.profile.settings.reducedMotion&&this.screenRoot.firstElementChild)this.animate(this.screenRoot.firstElementChild,[{opacity:0,transform:'translateY(5px)'},{opacity:1,transform:'translateY(0)'}],{duration:ANIMATION.modalMs,easing:'ease-out'});
     }
@@ -176,6 +188,7 @@ export class Interface {
       const progress=Math.min(1,Math.max(0,(time-startTime)/ANIMATION.scoreMs)),value=Math.round(start+(target-start)*(1-(1-progress)**3));
       element.textContent=number(value);this.scoreValue=value;
       if(progress<1)this.scoreFrame=requestAnimationFrame(step);
+      else this.scoreFrame=0;
     };this.scoreFrame=requestAnimationFrame(step);
   }
   closeDialog(reduced:boolean,done:()=>void):void{
@@ -184,12 +197,23 @@ export class Interface {
     void this.animate(dialog,[{opacity:1,transform:'scale(1)'},{opacity:0,transform:'translateY(6px) scale(.98)'}],{duration:ANIMATION.modalMs*.65,easing:'ease-in',fill:'forwards'}).finished.then(done,done);
   }
   record(reduced:boolean):void{
-    if(reduced)return;
-    requestAnimationFrame(()=>{
+    if(reduced||!this.effectsEnabled||this.lastScreen!=='game')return;
+    this.cancelRecord();const scope=this.recordScope;
+    this.recordFrame=requestAnimationFrame(()=>{
+      this.recordFrame=0;
+      if(scope!==this.recordScope||!this.effectsEnabled||this.lastScreen!=='game')return;
       const trophy=this.root.querySelector<HTMLElement>('.record-pill');
-      trophy?.classList.add('record-active');
-      const celebration=trophy?this.animate(trophy,[{transform:'scale(1)'},{transform:'scale(1.12)'},{transform:'scale(1)'}],{duration:ANIMATION.recordMs,easing:'ease-out'}):null;
-      void celebration?.finished.then(()=>trophy?.classList.remove('record-active'),()=>trophy?.classList.remove('record-active'));
+      if(!trophy)return;
+      trophy.classList.add('record-active');this.recordNode=trophy;
+      const celebration=this.animate(trophy,[{transform:'scale(1)'},{transform:'scale(1.12)'},{transform:'scale(1)'}],{duration:ANIMATION.recordMs,easing:'ease-out'});
+      this.recordAnimation=celebration;
+      const finish=()=>{if(this.recordAnimation!==celebration)return;trophy.classList.remove('record-active');this.recordAnimation=null;this.recordNode=null;};
+      void celebration.finished.then(finish,finish);
     });
+  }
+  private cancelRecord():void{
+    cancelAnimationFrame(this.recordFrame);this.recordFrame=0;
+    if(this.recordAnimation){this.animations.delete(this.recordAnimation);this.recordAnimation.cancel();this.recordAnimation=null;}
+    this.recordNode?.classList.remove('record-active');this.recordNode=null;
   }
 }
