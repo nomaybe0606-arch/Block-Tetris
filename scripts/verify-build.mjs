@@ -4,8 +4,8 @@ import { createServer } from 'node:http';
 import { resolve, join, relative, extname, sep } from 'node:path';
 
 const root = resolve('dist');
-const base = process.argv[2] ?? '/Block-Puzzle/';
-assert(base === '/Block-Puzzle/' || base === './', 'Expected /Block-Puzzle/ or ./');
+const base = process.argv[2] ?? '/Block-Tetris/';
+assert(base === '/Block-Tetris/' || base === './', 'Expected /Block-Tetris/ or ./');
 const mount = base === './' ? '/' : base;
 const origin = 'http://127.0.0.1';
 const documentUrl = new URL(mount, origin);

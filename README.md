@@ -2,7 +2,7 @@
 
 Полноценный локальный проект классической головоломки 8×8: TypeScript, Phaser 3, Vite. Собственные блоки с фасками, SVG-иконки и семь оригинальных OGG-ассетов. React и сервер не нужны.
 
-Публикация настроена исключительно для **GitHub Pages**: репозиторий [`nomaybe0606-arch/Block-Puzzle`](https://github.com/nomaybe0606-arch/Block-Puzzle), адрес `https://nomaybe0606-arch.github.io/Block-Puzzle/`. Каждый push в `main` запускает проверки и публикацию через GitHub Actions. Настройка и диагностика: [GITHUB_PAGES.md](GITHUB_PAGES.md).
+Публикация настроена исключительно для **GitHub Pages**: репозиторий [`nomaybe0606-arch/Block-Tetris`](https://github.com/nomaybe0606-arch/Block-Tetris), адрес `https://nomaybe0606-arch.github.io/Block-Tetris/`. Каждый push в `main` запускает проверки и публикацию через GitHub Actions. Настройка и диагностика: [GITHUB_PAGES.md](GITHUB_PAGES.md).
 
 ## Запуск
 
@@ -18,13 +18,13 @@ npm run dev
 ```sh
 npm test                 # Vitest: игровое ядро, ввод, граница Bridge
 npm run typecheck        # строгая проверка TypeScript
-npm run build            # GitHub Pages → dist/, base /Block-Puzzle/
-npm run verify:build     # проверка ассетов и HTTP-загрузки под /Block-Puzzle/
-npm run preview          # http://127.0.0.1:4173/Block-Puzzle/
+npm run build            # GitHub Pages → dist/, base /Block-Tetris/
+npm run verify:build     # проверка ассетов и HTTP-загрузки под /Block-Tetris/
+npm run preview          # http://127.0.0.1:4173/Block-Tetris/
 npm run package          # переносимый ZIP только для sandbox QA платформы
 ```
 
-Dev-сервер по-прежнему работает от `/`, production и preview — от `/Block-Puzzle/`. GitHub Actions собирает и загружает `dist` сам; эту папку не нужно коммитить. Открывать игру через HTTP, а не `file://`.
+Dev-сервер по-прежнему работает от `/`, production и preview — от `/Block-Tetris/`. GitHub Actions собирает и загружает `dist` сам; эту папку не нужно коммитить. Открывать игру через HTTP, а не `file://`.
 
 `npm run package` отдельно создаёт сборку с относительными путями и `artifacts/grid-pulse-qa.zip` для последующего QA в sandbox Playgama/Яндекс/VK. Это не альтернативный способ хостинга. `index.html` находится в корне ZIP. После такой команды для GitHub Pages снова выполнить `npm run build`.
 

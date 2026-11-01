@@ -38,7 +38,7 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Build for /Block-Puzzle/
+      - name: Build for /Block-Tetris/
         run: npm run build
 
       - name: Verify assets and HTTP paths

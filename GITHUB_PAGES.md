@@ -1,20 +1,22 @@
-# Grid Pulse: GitHub Pages в репозитории Block-Puzzle
+# Grid Pulse: GitHub Pages в репозитории Block-Tetris
 
-Репозиторий: https://github.com/nomaybe0606-arch/Block-Puzzle
+Репозиторий: https://github.com/nomaybe0606-arch/Block-Tetris
 
-Адрес игры после успешного deployment: https://nomaybe0606-arch.github.io/Block-Puzzle/
+Адрес игры после успешного deployment: https://nomaybe0606-arch.github.io/Block-Tetris/
 
-Публикация выполняется только через GitHub Pages. Название игры остаётся Grid Pulse; имя репозитория и префикс URL — **Block-Puzzle**, с учётом регистра.
+Публикация выполняется только через GitHub Pages. Название игры остаётся Grid Pulse; имя репозитория и префикс URL — **Block-Tetris**, с учётом регистра. Переименование выполнено 2 ноября 2026; прежнее имя — Block-Puzzle.
+
+Репозиторий используется публично по разрешению владельца. При переходе в private проверьте доступность Pages на вашем тарифе: GitHub может отключить сайт, и Configure GitHub Pages получит 404. В диагностике 2 ноября попытка включения была отклонена с HTTP 422: Your current plan does not support GitHub Pages for this repository. Проверки workflow отключать не нужно.
 
 ## Диагностика первого запуска
 
-Запуск https://github.com/nomaybe0606-arch/Block-Puzzle/actions/runs/41230314209:
+Запуск https://github.com/nomaybe0606-arch/Block-Tetris/actions/runs/41230314209:
 
 - `build` завершился успешно: Node.js, npm ci, TypeScript, все тесты, production build, проверка ресурсов и загрузка артефакта прошли.
 - `deploy` завершился ошибкой на `Configure GitHub Pages`.
 - Публичная annotation GitHub: `Get Pages site failed` и `HttpError: Not Found`. Шаг публикации артефакта был пропущен.
 - Это ошибка получения настроек сайта Pages. Неправильный `/grid-pulse/` не вызвал падение этого шага, но привёл бы к неверным URL ассетов после публикации.
-- При авторизованной диагностике Pages API уже возвращает HTTP 200 и `build_type: workflow`. Следовательно, в текущем состоянии Pages настроен на GitHub Actions. Не требуется создавать второй репозиторий.
+- При первой авторизованной диагностике Pages API возвращал HTTP 200 и `build_type: workflow`: на тот момент источником был GitHub Actions. Второй репозиторий для восстановления не требуется.
 - Предупреждение о Node.js 20 относится к внутреннему runtime официального `configure-pages@v5`, который runner запускает на Node.js 24. Ошибка шага была HTTP 404, а не ошибкой Node/npm. Проверки не отключались.
 
 ## Пути и команды
@@ -22,7 +24,7 @@
 | Сборка | Base | Команда | Адрес для локальной проверки |
 | --- | --- | --- | --- |
 | Разработка | `/` | `npm run dev` | `http://127.0.0.1:5173/` |
-| GitHub Pages | `/Block-Puzzle/` | `npm run build` | `npm run preview` → `http://127.0.0.1:4173/Block-Puzzle/` |
+| GitHub Pages | `/Block-Tetris/` | `npm run build` | `npm run preview` → `http://127.0.0.1:4173/Block-Tetris/` |
 | Sandbox Playgama | `./` | `npm run package` | Переносимый ZIP в `artifacts/`, не способ хостинга |
 
 После `npm run package` для возврата к Pages выполните `npm run build`. Звуки используют `import.meta.env.BASE_URL`, SDK подключается официальным локальным Vite-плагином, конфигурация Bridge лежит рядом с `index.html`. Для запуска используйте HTTP, не `file://`.
@@ -40,7 +42,7 @@
 
 Права build: `contents: read`. Права deploy заданы явно: `contents: read`, `pages: write`, `id-token: write`; environment — `github-pages`. `GITHUB_TOKEN` выдаётся GitHub автоматически. PAT и дополнительные секреты в workflow не нужны.
 
-Проверка ресурсов сопоставляет `public` и `dist` побайтно, проверяет HTML/JS-чанки, URL аудио, JSON и форматы OGG/MP3. Временный HTTP-сервер отдаёт все файлы под `/Block-Puzzle/`, без подмены отсутствующих ресурсов на HTML; проверяются ответы, содержимое и MIME-типы. Сервер закрывается после проверки.
+Проверка ресурсов сопоставляет `public` и `dist` побайтно, проверяет HTML/JS-чанки, URL аудио, JSON и форматы OGG/MP3. Временный HTTP-сервер отдаёт все файлы под `/Block-Tetris/`, без подмены отсутствующих ресурсов на HTML; проверяются ответы, содержимое и MIME-типы. Сервер закрывается после проверки.
 
 ## Обновление
 
@@ -56,7 +58,7 @@ git push origin main
 
 ## Если Configure GitHub Pages снова падает
 
-1. Откройте https://github.com/nomaybe0606-arch/Block-Puzzle/settings/pages под аккаунтом владельца.
+1. Откройте https://github.com/nomaybe0606-arch/Block-Tetris/settings/pages под аккаунтом владельца.
 2. В блоке **Build and deployment** выберите **Source → GitHub Actions**. Не выбирайте публикацию исходников из ветки: проект требует Vite build.
 3. Откройте **Actions → Deploy Grid Pulse to GitHub Pages** и выполните **Run workflow → main → Run workflow**, либо **Re-run failed jobs** у исправленного запуска.
 4. Если GitHub показывает ожидание environment approval, откройте запуск, нажмите **Review deployments**, выберите `github-pages` и подтвердите публикацию, если это предусмотрено вашими правилами репозитория.
