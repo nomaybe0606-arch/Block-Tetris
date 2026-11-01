@@ -7,4 +7,10 @@ export const ANIMATION = {
   maxTrail: 6,
   particlePoolSize: 32,
   lowFpsThreshold: 44,
+  landMs: 120,
+  trayMs: 220,
+  trayStaggerMs: 35,
+  previewMs: 65,
+  scoreMs: 240,
+  endRoundHoldMs: 180,
 };

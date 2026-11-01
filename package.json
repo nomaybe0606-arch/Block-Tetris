@@ -1,6 +1,6 @@
 {
   "name": "grid-pulse",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -19,6 +19,7 @@
     "phaser": "3.90.0"
   },
   "devDependencies": {
+    "happy-dom": "21.0.4",
     "typescript": "5.9.3",
     "vite": "7.3.7",
     "vitest": "4.1.12"

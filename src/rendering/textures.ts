@@ -24,6 +24,9 @@ export function createTextures(scene: Phaser.Scene): void {
   const glow=scene.textures.createCanvas('neon-glow',128,128)!;
   const halo=glow.context.createRadialGradient(64,64,2,64,64,64);halo.addColorStop(0,'#ffffffa0');halo.addColorStop(.3,'#ffffff40');halo.addColorStop(1,'#ffffff00');
   glow.context.fillStyle=halo;glow.context.fillRect(0,0,128,128);glow.refresh();
+  const line=scene.textures.createCanvas('line-glow',256,24)!,lineCtx=line.context;
+  const light=lineCtx.createLinearGradient(0,0,0,24);light.addColorStop(0,'#ffffff00');light.addColorStop(.35,'#ffffff35');light.addColorStop(.5,'#ffffffed');light.addColorStop(.65,'#ffffff35');light.addColorStop(1,'#ffffff00');
+  lineCtx.fillStyle=light;lineCtx.fillRect(0,0,256,24);line.refresh();
   const board=scene.textures.createCanvas('board-glass',864,864)!,ctx=board.context;
   const bg=ctx.createLinearGradient(0,0,864,864);bg.addColorStop(0,'#131c3d');bg.addColorStop(.5,'#0b142e');bg.addColorStop(1,'#1b2145');
   ctx.fillStyle=bg;ctx.beginPath();ctx.roundRect(1,1,862,862,38);ctx.fill();

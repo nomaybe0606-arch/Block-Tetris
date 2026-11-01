@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GRID } from '../config/layout';
 import { DRAG } from '../config/controls';
 import { FEEDBACK } from '../config/feedback';
+import { ANIMATION } from '../config/animation';
 import { canPlace, cloneBoard } from '../core/board';
 import { getShape } from '../core/shapes';
 import type { GameState, Placement, SwapOffer } from '../core/types';
@@ -32,6 +33,7 @@ export class GameScene extends Phaser.Scene {
   private locked = false;
   private neon!:NeonEffects;
   private swapAnimation!:SwapAnimation;
+  private pending:Phaser.Time.TimerEvent[]=[];
   constructor(delegate: SceneDelegate) { super('Classic');this.delegate=delegate; }
   create(): void {
     this.cameras.main.setZoom(this.delegate.pixelRatio()).centerOn(240,425);
@@ -48,11 +50,12 @@ export class GameScene extends Phaser.Scene {
       begin:(slot,pose)=>this.begin(slot,pose),move:pose=>this.move(pose),end:(c,r)=>this.drop(c,r),cancel:()=>this.cancelDrag(),
     });
     window.addEventListener('keydown',this.key);
-    this.events.once('shutdown',()=>{this.controls.destroy();this.swapAnimation.cancel();this.neon.destroy();window.removeEventListener('keydown',this.key);});
+    this.events.once('shutdown',()=>{this.cancelPresentation();this.controls.destroy();this.swapAnimation.cancel();this.neon.destroy();window.removeEventListener('keydown',this.key);});
     this.delegate.onReady(this);
   }
-  show(visible: boolean): void { this.boardView.root.setVisible(visible); if(!visible) {this.cancel();this.finishReturn();this.neon.reset();} }
+  show(visible: boolean): void { this.boardView.root.setVisible(visible); if(!visible) {this.cancelPresentation();this.cancel();this.finishReturn();this.neon.reset();this.feedback.reset();} }
   refresh(animate = false): void {
+    this.cancelPresentation();
     this.finishReturn();
     this.boardView.render(this.delegate.state.board);
     this.boardView.renderTray(this.delegate.state,this.delegate.reducedMotion(),animate,this.delegate.showSwapControl());
@@ -67,7 +70,7 @@ export class GameScene extends Phaser.Scene {
   private begin(slot:number,pose:DragPose): void {
     this.cancelDrag();this.finishReturn();const piece=this.delegate.state.tray[slot];if(!piece)return;
     this.slot=slot;this.boardView.slotVisible(slot,false);
-    this.drag=this.boardView.piece(piece,getShape(piece.shapeId)).setPosition(pose.x,pose.y).setDepth(30).setScale(pose.scale).setAlpha(.96);
+    this.drag=this.boardView.acquireDrag(piece,getShape(piece.shapeId)).setPosition(pose.x,pose.y).setDepth(30).setScale(pose.scale).setAlpha(.96);
     this.neon.configure(this.delegate.reducedMotion(),this.delegate.intenseEffects(),this.game.loop.actualFps);this.neon.begin(getShape(piece.shapeId),piece.color,pose);
     this.delegate.onPick();
   }
@@ -85,31 +88,40 @@ export class GameScene extends Phaser.Scene {
     const valid=canPlace(this.delegate.state.board,getShape(piece.shapeId),x,y)&&(!this.delegate.isTutorial()||(x===5&&y===6));
     if(!valid)return this.cancelDrag();
     const previous=cloneBoard(this.delegate.state.board);
-    this.drag?.destroy();this.drag=null;this.slot=-1;this.boardView.clearPreview();
+    this.boardView.releaseDrag();this.drag=null;this.slot=-1;this.boardView.clearPreview();
     this.neon.end();
     const result=this.delegate.onPlace(slot,x,y);
     if(!result) {this.refresh();return;}
     for(const [cx,cy] of result.placed)previous[cy][cx]=piece.color;
-    this.boardView.render(previous);this.boardView.showTutorial(false);
+    this.boardView.render(result.cleared.length?previous:result.state.board);this.boardView.showTutorial(false);
     this.boardView.renderTray(result.state,this.delegate.reducedMotion(),result.state.tray.every(Boolean),this.delegate.showSwapControl());
-    this.feedback.placement(result,piece.color,this.decorReduced());this.neon.placement(result,piece.color);
+    this.boardView.landCells(result.placed,this.decorReduced());this.neon.placement(result,piece.color);
     if(result.cleared.length) {
       this.locked=true;
       const lead=this.delegate.reducedMotion()?0:FEEDBACK.clearLeadMs;
-      this.time.delayedCall(lead,()=>{this.delegate.onClearFeedback(result);this.boardView.clearCells(result.cleared,this.decorReduced());this.feedback.clear(result,this.decorReduced());this.neon.clearAccent(result,previous);});
-      this.time.delayedCall(lead+(this.delegate.reducedMotion()?FEEDBACK.reducedClearMs:FEEDBACK.clearDurationMs),()=>{this.boardView.render(result.state.board);this.locked=false;this.delegate.onSettled();});
+      this.later(lead,()=>{this.delegate.onClearFeedback(result);this.boardView.clearCells(result.cleared,this.decorReduced());this.feedback.clear(result,this.decorReduced());this.neon.clearAccent(result,previous);});
+      this.later(lead+(this.delegate.reducedMotion()?FEEDBACK.reducedClearMs:FEEDBACK.clearDurationMs),()=>{this.boardView.render(result.state.board);this.finishPlacement(result);});
     } else {
       this.feedback.points(result.points,GRID.x+x*52+26,GRID.y+y*52+12,this.delegate.reducedMotion());
-      this.boardView.render(result.state.board);this.delegate.onSettled();
+      this.finishPlacement(result);
     }
   }
+  private finishPlacement(result:Placement):void{
+    const finish=()=>{if(this.delegate.state!==result.state)return;this.locked=false;this.delegate.onSettled();};
+    if(result.state.over&&!this.delegate.reducedMotion()){this.locked=true;this.later(ANIMATION.endRoundHoldMs,finish);}
+    else finish();
+  }
+  private later(delay:number,callback:()=>void):void{
+    const event=this.time.delayedCall(delay,()=>{this.pending=this.pending.filter(item=>item!==event);callback();});this.pending.push(event);
+  }
+  private cancelPresentation():void{for(const event of this.pending)event.remove(false);this.pending=[];this.locked=false;}
   private cancelDrag(): void {
     const drag=this.drag,slot=this.slot;
     this.drag=null;this.slot=-1;this.boardView?.clearPreview();
     if(!drag)return;
     this.neon.end();
     this.tweens.killTweensOf(drag);
-    if(this.delegate.reducedMotion()) {drag.destroy();this.boardView.slotVisible(slot,true);}
+    if(this.delegate.reducedMotion()) {this.boardView.releaseDrag();this.boardView.slotVisible(slot,true);}
     else {
       this.finishReturn();this.returning=drag;this.returningSlot=slot;
       this.tweens.add({targets:drag,...this.boardView.trayHome(slot),duration:DRAG.returnDurationMs,ease:'Sine.Out',onComplete:()=>this.finishReturn()});
@@ -118,7 +130,7 @@ export class GameScene extends Phaser.Scene {
   private finishReturn():void{
     if(!this.returning)return;
     const returning=this.returning,slot=this.returningSlot;this.returning=null;this.returningSlot=-1;
-    this.tweens.killTweensOf(returning);returning.destroy();this.boardView.slotVisible(slot,true);
+    this.tweens.killTweensOf(returning);this.boardView.releaseDrag();this.boardView.slotVisible(slot,true);
   }
   private key=(event:KeyboardEvent):void=>{
     if(!this.delegate.canInteract()||this.locked||event.target instanceof HTMLButtonElement||event.target instanceof HTMLSelectElement||event.target instanceof HTMLInputElement)return;

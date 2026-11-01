@@ -10,7 +10,7 @@ function sceneFake(){
   const node=(kind:string)=>{
     const value={kind,destroyed:false,x:0,y:0,scaleX:1,scaleY:1,
       setDepth:()=>value,setDisplaySize:()=>value,setTint:()=>value,setScale:()=>value,setOrigin:()=>value,
-      fillStyle:()=>value,fillRoundedRect:()=>value,destroy:()=>{value.destroyed=true;}};
+      clear:()=>value,setAlpha:()=>value,setVisible:()=>value,setActive:()=>value,fillStyle:()=>value,fillRoundedRect:()=>value,destroy:()=>{value.destroyed=true;}};
     nodes.push(value);return value;
   };
   const scene={add:{graphics:()=>node('graphics'),image:()=>node('image'),rectangle:()=>node('rectangle'),text:()=>node('text')},tweens:{add:(config:Record<string,unknown>)=>tweens.push(config),killTweensOf:vi.fn()}};

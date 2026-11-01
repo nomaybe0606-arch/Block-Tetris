@@ -1,5 +1,4 @@
 export const FEEDBACK = {
-  placementPulseMs: 65,
   clearLeadMs: 45,
   clearDurationMs: 215,
   reducedClearMs: 80,
