@@ -6,11 +6,12 @@ import { newGame } from '../src/core/game';
 import { generateSwapOffer } from '../src/core/SwapGenerator';
 
 let dom:Window,now:number,frames:Map<number,FrameRequestCallback>,nextFrame:number;
-const animate=vi.fn(()=>({finished:new Promise<void>(()=>{})}));
+const cancelMotion=vi.fn();
+const animate=vi.fn(()=>({finished:new Promise<void>(()=>{}),cancel:cancelMotion}));
 beforeEach(()=>{
   dom=new Window();dom.document.body.innerHTML='<div id="frame"><div id="ui"></div></div>';
   Object.defineProperty(dom.Element.prototype,'animate',{value:animate,configurable:true});
-  now=0;nextFrame=0;frames=new Map();animate.mockClear();
+  now=0;nextFrame=0;frames=new Map();animate.mockClear();cancelMotion.mockClear();
   vi.stubGlobal('document',dom.document);vi.spyOn(performance,'now').mockImplementation(()=>now);
   vi.stubGlobal('requestAnimationFrame',(callback:FrameRequestCallback)=>{frames.set(++nextFrame,callback);return nextFrame;});
   vi.stubGlobal('cancelAnimationFrame',(id:number)=>frames.delete(id));
@@ -40,6 +41,11 @@ describe('stable game interface',()=>{
   it('stops a running counter immediately when Reduced Motion is enabled',()=>{
     const {ui,model}=setup();model.state={...model.state,score:144};ui.render(model,true);tick(40);
     model.profile.settings.reducedMotion=true;ui.render(model);expect(document.querySelector('#score-value')!.textContent).toBe('144');expect(frames.size).toBe(0);
+  });
+  it('cancels active compositor animations and record glow when Reduced Motion is enabled',()=>{
+    const {ui,model}=setup();model.state={...model.state,score:144};ui.render(model,true);ui.record(false);tick(40);
+    expect(document.querySelector('.record-active')).not.toBeNull();model.profile.settings.reducedMotion=true;ui.render(model);
+    expect(cancelMotion).toHaveBeenCalled();expect(document.querySelector('.record-active')).toBeNull();expect(frames.size).toBe(0);
   });
   it('updates switches without rebuilding the settings dialog or losing keyboard focus',()=>{
     const {ui,model}=setup();model.modal='settings';ui.render(model);tick(16);

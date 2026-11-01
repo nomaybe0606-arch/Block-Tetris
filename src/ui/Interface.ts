@@ -30,6 +30,7 @@ export class Interface {
   private pauseRoot=document.createElement('div');
   private screenKey='';private modalKey='';private modalMarkup='';private pauseKey='';
   private fragments=new WeakMap<Element,string>();
+  private animations=new Set<Animation>();
   constructor(private onAction: (action: string) => void, private onSetting: (key: string, value: boolean | string) => void) {
     for(const host of [this.screenRoot,this.dialogRoot,this.pauseRoot]){host.className='ui-host';this.root.append(host);}
     this.root.addEventListener('click', e => {
@@ -58,12 +59,13 @@ export class Interface {
     document.documentElement.lang=model.profile.settings.language;
     document.querySelector('#frame')!.classList.toggle('reduced-motion',model.profile.settings.reducedMotion);
     document.querySelector('#frame')!.classList.toggle('low-effects',!model.profile.settings.intenseEffects);
+    if(model.profile.settings.reducedMotion){for(const animation of this.animations)animation.cancel();this.animations.clear();this.root.querySelector('.record-active')?.classList.remove('record-active');}
     if(model.modal&&!this.hadModal)this.priorFocus=document.activeElement as HTMLElement;
     const menuKey=model.screen==='menu'?`:${model.profile.best}:${model.profile.totalLines}:${model.profile.maxCombo}:${!!(model.profile.game&&!model.profile.game.over)}`:'';
     const screenKey=`${model.screen}:${model.profile.settings.language}${menuKey}`;
     if(screenKey!==this.screenKey){
       this.screenRoot.innerHTML=model.screen==='menu'?this.menu(model,c):this.game(model,c);this.screenKey=screenKey;
-      if(this.lastScreen!==model.screen&&!model.profile.settings.reducedMotion)this.screenRoot.firstElementChild?.animate([{opacity:0,transform:'translateY(5px)'},{opacity:1,transform:'translateY(0)'}],{duration:ANIMATION.modalMs,easing:'ease-out'});
+      if(this.lastScreen!==model.screen&&!model.profile.settings.reducedMotion&&this.screenRoot.firstElementChild)this.animate(this.screenRoot.firstElementChild,[{opacity:0,transform:'translateY(5px)'},{opacity:1,transform:'translateY(0)'}],{duration:ANIMATION.modalMs,easing:'ease-out'});
     }
     this.lastScreen=model.screen;
     if(model.screen!=='menu')this.patchGame(model,c);
@@ -75,6 +77,10 @@ export class Interface {
     this.hadModal=!!model.modal;
     if(focusedSetting&&model.modal==='settings')this.root.querySelector<HTMLElement>(`[data-setting="${focusedSetting}"]`)?.focus();
     if(model.screen!=='menu')this.animateScore(model.state.score,animateScore&&!model.profile.settings.reducedMotion,model.profile.settings.reducedMotion);
+  }
+  private animate(element:Element,frames:Keyframe[],options:KeyframeAnimationOptions):Animation{
+    const animation=element.animate(frames,options);this.animations.add(animation);
+    void animation.finished.then(()=>this.animations.delete(animation),()=>this.animations.delete(animation));return animation;
   }
   private text(selector:string,value:string):void{const element=this.screenRoot.querySelector(selector);if(element&&element.textContent!==value)element.textContent=value;}
   private fragment(selector:string,html:string):void{
@@ -165,7 +171,7 @@ export class Interface {
     if(!animate||!sameNode){this.scoreValue=target;element.textContent=number(target);return;}
     const start=animate?this.scoreValue:target,startTime=performance.now();
     element.textContent=number(start);
-    element.animate([{transform:'scale(1)'},{transform:'scale(1.035)'},{transform:'scale(1)'}],{duration:ANIMATION.scoreMs,easing:'ease-out'});
+    this.animate(element,[{transform:'scale(1)'},{transform:'scale(1.035)'},{transform:'scale(1)'}],{duration:ANIMATION.scoreMs,easing:'ease-out'});
     const step=(time:number)=>{
       const progress=Math.min(1,Math.max(0,(time-startTime)/ANIMATION.scoreMs)),value=Math.round(start+(target-start)*(1-(1-progress)**3));
       element.textContent=number(value);this.scoreValue=value;
@@ -175,14 +181,14 @@ export class Interface {
   closeDialog(reduced:boolean,done:()=>void):void{
     const dialog=this.root.querySelector<HTMLElement>('[role="dialog"]');
     if(!dialog||reduced){done();return;}
-    void dialog.animate([{opacity:1,transform:'scale(1)'},{opacity:0,transform:'translateY(6px) scale(.98)'}],{duration:ANIMATION.modalMs*.65,easing:'ease-in',fill:'forwards'}).finished.then(done,done);
+    void this.animate(dialog,[{opacity:1,transform:'scale(1)'},{opacity:0,transform:'translateY(6px) scale(.98)'}],{duration:ANIMATION.modalMs*.65,easing:'ease-in',fill:'forwards'}).finished.then(done,done);
   }
   record(reduced:boolean):void{
     if(reduced)return;
     requestAnimationFrame(()=>{
       const trophy=this.root.querySelector<HTMLElement>('.record-pill');
       trophy?.classList.add('record-active');
-      const celebration=trophy?.animate([{transform:'scale(1)'},{transform:'scale(1.12)'},{transform:'scale(1)'}],{duration:ANIMATION.recordMs,easing:'ease-out'});
+      const celebration=trophy?this.animate(trophy,[{transform:'scale(1)'},{transform:'scale(1.12)'},{transform:'scale(1)'}],{duration:ANIMATION.recordMs,easing:'ease-out'}):null;
       void celebration?.finished.then(()=>trophy?.classList.remove('record-active'),()=>trophy?.classList.remove('record-active'));
     });
   }
