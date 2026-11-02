@@ -1,4 +1,4 @@
-import { MemoryPlatform } from '../PlatformService';
+import { MemoryPlatform } from '../MemoryPlatform';
 import { RewardedAdService } from '../RewardedAdService';
 
 /** GRID_PULSE_DEV_REWARDED_ONLY: dynamically imported ONLY by localhost DEV boot. */

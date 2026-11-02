@@ -13,6 +13,10 @@ export interface PlatformPort {
   checkpoint(data: string): Promise<boolean>;
   showRewarded(onReward:()=>void|Promise<void>):Promise<RewardedResult>;
   gameplayAction():void;
+  /** Hosts with banner ads show one only where the player is not in a round. */
+  setBanner?(visible:boolean):void;
+  /** Shown in settings only on hosts that allow external support links. */
+  readonly supportUrl?:string;
 }
 
 const KEY = 'grid-pulse-v1';
@@ -110,21 +114,4 @@ export class PlatformService implements PlatformPort {
   }
 }
 
-/** Explicit development-only mock; intentionally has no disk persistence. */
-export class MemoryPlatform implements PlatformPort {
-  language = 'en'; audioEnabled = true; paused = false; storageAvailable = true;
-  onChange: (() => void) | null = null;
-  private data: string | null = null;
-  constructor(){
-    document.addEventListener('visibilitychange',()=>{this.paused=this.adBusy||document.hidden;this.onChange?.();});
-  }
-  get rewardedSupported():boolean{return false;}
-  get adBusy():boolean{return false;}
-  async checkpoint(data:string):Promise<boolean>{return this.save(data);}
-  async showRewarded(_onReward:()=>void|Promise<void>):Promise<RewardedResult>{return 'unavailable';}
-  gameplayAction():void{}
-  async load(): Promise<unknown> { return this.data; }
-  async save(data: string): Promise<boolean> { this.data = data; return true; }
-  message(_message: string): void { /* No host in explicit local mock mode. */ }
-  gameOver(): void { /* No ads in local mock mode. */ }
-}
+export { MemoryPlatform } from './MemoryPlatform';

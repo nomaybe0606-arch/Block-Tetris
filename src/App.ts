@@ -164,7 +164,8 @@ export class App implements SceneDelegate {
   private save():void{void this.platform.save(JSON.stringify(this.profile));}
   private render(animateScore=false):void{
     const c=strings[this.profile.settings.language];
-    this.ui.render({screen:this.screen,modal:this.modal,state:this.state,profile:this.profile,paused:this.platform.paused,storageAvailable:this.platform.storageAvailable,swap:this.swap.model(this.showSwapControl()&&this.screen==='game',key=>c[key])},animateScore);
+    this.ui.render({screen:this.screen,modal:this.modal,state:this.state,profile:this.profile,paused:this.platform.paused,storageAvailable:this.platform.storageAvailable,supportUrl:this.platform.supportUrl,swap:this.swap.model(this.showSwapControl()&&this.screen==='game',key=>c[key])},animateScore);
+    this.platform.setBanner?.(this.screen==='menu');
     this.game?.canvas.setAttribute('aria-label',this.profile.settings.language==='ru'?'Поле 8 на 8. Фигуры: клавиши 1, 2, 3; стрелки; Enter.':'8 by 8 board. Select a piece with 1, 2, 3; move with arrows; place with Enter.');
   }
 }

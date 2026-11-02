@@ -22,6 +22,10 @@ npm run build            # GitHub Pages → dist/, base /Block-Tetris/
 npm run verify:build     # проверка ассетов и HTTP-загрузки под /Block-Tetris/
 npm run preview          # http://127.0.0.1:4173/Block-Tetris/
 npm run package          # переносимый ZIP только для sandbox QA платформы
+npm run build:vk         # VK-версия → dist-vk/ (без Playgama)
+npm run verify:vk        # проверка dist-vk/
+npm run deploy:vk        # сборка, проверка и загрузка на хостинг VK
+npm run promo:vk         # картинки для каталога VK → promo/vk/
 ```
 
 Dev-сервер по-прежнему работает от `/`, production и preview — от `/Block-Tetris/`. GitHub Actions собирает и загружает `dist` сам; эту папку не нужно коммитить. Открывать игру через HTTP, а не `file://`.
@@ -137,6 +141,20 @@ GitHub Pages используется для тестирования геймп
 - https://wiki.playgama.com/playgama/bridge-sdk/api/advertisement/interstitial
 - https://wiki.playgama.com/playgama/bridge-sdk/api/advertisement/rewarded
 - https://wiki.playgama.com/playgama/bridge-sdk/config
+
+## VK
+
+VK-версия собирается отдельным режимом `vk` (`npm run build:vk` → `dist-vk/`, относительные пути). Вместо Playgama Bridge используется нативный `@vkontakte/vk-bridge` — адаптер `src/platform/VkPlatform.ts`. Каждая сборка содержит только свой SDK: `main.ts` загружает платформу динамически, а `verify:vk` проверяет, что в `dist-vk/` нет Playgama и dev-моков. Лицензия и notices для VK Bridge подставляются в сборку автоматически.
+
+- `VKWebAppInit` вызывается сразу после маленького стартового чанка, до загрузки Phaser. Вне VK игра запускается без сохранения (как при ошибке Bridge).
+- Язык — из параметра запуска `vk_language`.
+- Сохранение — VK Storage, ключ `grid-pulse-v1`, кусками по 4000 байт в двух слотах: указатель переключается только после записи всех кусков, поэтому прерванная запись не портит прошлое сохранение. Ходы пишутся пачкой раз в 10 секунд (у VK Storage лимит запросов), сразу — при сворачивании (`VKWebAppViewHide`), уходе со страницы, конце партии и после награды за рекламу. Если прочитать сохранение не удалось, запись отключается, чтобы не затереть облачный прогресс.
+- Rewarded (замена фигуры) — `VKWebAppCheckNativeAds`/`VKWebAppShowNativeAds` с `reward`; награда только при `result: true`. Interstitial — после проигрыша, не чаще раза в минуту и не сразу после rewarded. Баннер `VKWebAppShowBannerAd` (снизу, `resize`) — только в главном меню; закрытый игроком баннер больше не показывается в этой сессии.
+- В настройках VK-версии есть ссылка «Написать в поддержку» (`VK.supportUrl`).
+
+Перед первой выкладкой: создать приложение VK, вписать его ID в `vk-hosting-config.json` (`app_id`, сейчас 0 — `deploy:vk` остановится с ошибкой), выполнить `npm run deploy:vk` и проверить рекламу и сохранения в самом VK. Картинки для каталога лежат в `promo/vk/` (иконки 576/278/150/32, сниппет 1120×630, скриншоты 1200×600).
+
+Локально: `npm run dev:vk` (с `?mock=1` — память вместо VK) или `npx vite preview --mode vk` для собранной версии.
 
 ## Структура
 

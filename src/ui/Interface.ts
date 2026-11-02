@@ -10,6 +10,7 @@ export type Screen = 'menu' | 'game' | 'tutorial';
 export type Modal = 'settings' | 'restart' | 'over' | 'tutorial-success' | 'swap' | null;
 export interface UIModel {
   screen: Screen; modal: Modal; state: GameState; profile: Profile; paused: boolean; storageAvailable: boolean;
+  supportUrl?: string;
   swap:SwapUI;
 }
 const number = (n: number) => n.toLocaleString('en-US').replaceAll(',', ' ');
@@ -51,7 +52,7 @@ export class Interface {
       if(!dialog)return;
       if(e.key==='Escape'&&dialog.dataset.dismissible==='true'){e.preventDefault();this.onAction('close');}
       if(e.key==='Tab'){
-        const controls=Array.from(dialog.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled)'));
+        const controls=Array.from(dialog.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), a[href]'));
         const first=controls[0],last=controls[controls.length-1];
         if(!first){e.preventDefault();dialog.tabIndex=-1;dialog.focus();return;}
         if(!dialog.contains(document.activeElement)||document.activeElement===dialog){e.preventDefault();(e.shiftKey?last:first).focus();return;}
@@ -160,7 +161,7 @@ export class Interface {
       body=`<div class="modal-heading"><div><p class="eyebrow">GRID TETRIS</p><h2>${c.settings}</h2></div>${iconButton('close',c.close,'close')}</div>
         <div class="settings-list">${toggle('sound',c.sound,'sound')}${toggle('music',c.music,'music')}${toggle('mute',c.mute,'sound')}${toggle('reducedMotion',c.motion,'moon',c.motionHelp)}${toggle('intenseEffects',c.effects,'sparkle')}
         <label class="setting-row"><span class="setting-icon">${icon('globe')}</span><span class="setting-title">${c.language}</span><select data-setting="language" aria-label="${c.language}"><option value="en" ${m.profile.settings.language==='en'?'selected':''}>English</option><option value="ru" ${m.profile.settings.language==='ru'?'selected':''}>Русский</option></select></label></div>
-        ${action('close',c.close,'primary')}${m.screen==='game'?`<div class="settings-actions">${action('new',c.newGame,'text-button','restart')}${action('home',c.home,'text-button','home')}</div>`:''}`;
+        ${action('close',c.close,'primary')}${m.supportUrl?`<a class="text-button support-link" href="${m.supportUrl}" target="_blank" rel="noopener noreferrer">${icon('help')}<span>${c.support}</span></a>`:''}${m.screen==='game'?`<div class="settings-actions">${action('new',c.newGame,'text-button','restart')}${action('home',c.home,'text-button','home')}</div>`:''}`;
     } else if(m.modal==='swap') {
       body=swapModal(m.state,m.swap,c);
     } else if(m.modal==='restart') {

@@ -1,16 +1,22 @@
 import './style.css';
-import { PlatformService, MemoryPlatform, type PlatformPort } from './platform/PlatformService';
+import type { PlatformPort } from './platform/PlatformService';
 import { defaultProfile, restoreProfile } from './platform/profile';
 
+// Each host build bundles only its own SDK: the VK build never loads Playgama Bridge and vice versa.
+async function hostPlatform():Promise<PlatformPort>{
+  if(import.meta.env.MODE==='vk'){const {VkPlatform}=await import('./platform/VkPlatform');const platform=new VkPlatform();await platform.initialize();return platform;}
+  const {PlatformService}=await import('./platform/PlatformService');const platform=new PlatformService();await platform.initialize();return platform;
+}
 async function boot():Promise<void>{
   const query=new URLSearchParams(location.search);
   const explicitMock=import.meta.env.DEV&&['localhost','127.0.0.1','[::1]'].includes(location.hostname)&&query.get('mock')==='1';
-  let platform:PlatformPort=explicitMock?new MemoryPlatform():new PlatformService();
+  let platform:PlatformPort;
   if(import.meta.env.DEV&&explicitMock&&query.has('rewarded')){
     const {DevRewardedPlatform}=await import('./platform/dev/DevRewardedPlatform');
     platform=new DevRewardedPlatform(query.get('rewarded')!);
-  }
-  if(platform instanceof PlatformService)await platform.initialize();
+  }else if(import.meta.env.DEV&&explicitMock){
+    const {MemoryPlatform}=await import('./platform/MemoryPlatform');platform=new MemoryPlatform();
+  }else platform=await hostPlatform();
   const defaults=defaultProfile(platform.language,matchMedia('(prefers-reduced-motion: reduce)').matches);
   const profile=restoreProfile(await platform.load(),defaults);
   if(import.meta.env.DEV&&explicitMock&&query.get('qa')==='tray'){
