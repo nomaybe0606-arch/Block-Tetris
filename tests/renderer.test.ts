@@ -8,6 +8,11 @@ import { getShape } from '../src/core/shapes';
 import { renderScene } from './helpers/renderScene';
 
 describe('persistent rendering during play',()=>{
+  it('allows grabbing a newly dealt piece before its fade-in has advanced',()=>{
+    const s=renderScene(),board=new BoardRenderer(s.scene),state=newGame(4);board.renderTray(state,false,true);
+    expect(board.trayTransform(0)).toMatchObject({scale:expect.any(Number)});
+    expect(board.trayTransform(0)!.scale).toBeGreaterThan(0);
+  });
   it('reuses all board cells through 1000 board updates and resets cleared cells',()=>{
     const s=renderScene(),board=new BoardRenderer(s.scene),count=s.nodes.length,state=emptyBoard();
     for(let move=0;move<1000;move++){const x=move%8,y=Math.floor(move/8)%8;state[y][x]=move%8;board.render(state);}
@@ -49,9 +54,9 @@ describe('persistent rendering during play',()=>{
     const s=renderScene(),neon=new NeonEffects(s.scene),feedback=new Feedback(s.scene,neon);
     const state=newGame(1),result={state,rows:[3],columns:[],placed:[],cleared:Array.from({length:8},(_,x)=>[x,3] as const),points:10};
     const allocated=s.nodes.length;
-    for(let i=0;i<100;i++){feedback.clear(result,false);feedback.points(i,100,200,false);s.complete();}
+    for(let i=0;i<100;i++){feedback.clear(result,false);feedback.points(i,100,200,false);feedback.update(500);s.complete();}
     expect(s.nodes).toHaveLength(allocated);
-    expect(s.raw.add.text).toHaveBeenCalledTimes(2);expect(s.nodes.filter(node=>node.kind==='text'&&node.destroyed)).toHaveLength(0);
+    expect(s.raw.add.text).not.toHaveBeenCalled();expect(s.nodes.filter(node=>node.kind==='text'&&node.destroyed)).toHaveLength(0);expect(feedback.active).toBe(0);
     feedback.reset();expect(s.nodes.filter(node=>node.kind==='text').every(node=>!node.active&&!node.visible)).toBe(true);
   });
   it('does not snap remaining tray figures to full size during a rapid next move',()=>{

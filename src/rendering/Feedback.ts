@@ -3,22 +3,23 @@ import { GRID } from '../config/layout';
 import { FEEDBACK } from '../config/feedback';
 import type { Placement } from '../core/types';
 import type { NeonEffects } from './NeonEffects';
+import { ClearEffects } from './ClearEffects';
+import { captureClear, type ClearEvent } from './ClearEvent';
 
 export class Feedback {
+  private runtime:ClearEffects|null=null;
   private callout: Phaser.GameObjects.Text | null = null;
   private pointLabel:Phaser.GameObjects.Text|null=null;
   private flash:Phaser.GameObjects.Graphics|null=null;
   private lines:{beam:Phaser.GameObjects.Image;glint:Phaser.GameObjects.Image}[]=[];
-  constructor(private scene: Phaser.Scene,private neon?:NeonEffects) {
+  constructor(private scene: Phaser.Scene,private neon?:NeonEffects,layer?:Phaser.GameObjects.Container) {
     if(neon){
-      const style={fontFamily:'Trebuchet MS, sans-serif',fontStyle:'bold',color:'#eefff9',align:'center',stroke:'#15243d',strokeThickness:4};
-      this.callout=scene.add.text(240,400,'',{...style,fontSize:'28px',fixedWidth:440,fixedHeight:92}).setOrigin(.5).setDepth(20).setVisible(false).setActive(false);
-      this.pointLabel=scene.add.text(0,0,'',{...style,fontSize:'24px',fixedWidth:160,fixedHeight:48}).setOrigin(.5).setDepth(20).setVisible(false).setActive(false);
-      this.flash=scene.add.graphics().setDepth(12).setVisible(false).setActive(false);
-      this.lines=Array.from({length:16},()=>({beam:scene.add.image(0,0,'line-glow').setDepth(14).setBlendMode('ADD').setVisible(false).setActive(false),glint:scene.add.image(0,0,'neon-glow').setDepth(15).setBlendMode('ADD').setVisible(false).setActive(false)}));
+      this.runtime=new ClearEffects(scene,layer??scene.add.container().setDepth(8),count=>neon.budget(count));
     }
   }
-  clear(result: Placement, reduced: boolean): void {
+  clear(input: Placement|ClearEvent, reduced: boolean,onStart?:()=>void): void {
+    if(this.runtime){this.runtime.clear('cells' in input?input:captureClear(input,input.state.board,1),reduced,onStart);return;}
+    const result=input as Placement;
     const count=result.rows.length+result.columns.length,multi=count>1;
     const color=multi?0xd1c3ff:0xa4fff0;
     const duration=reduced?FEEDBACK.reducedClearMs:FEEDBACK.clearDurationMs;
@@ -68,13 +69,17 @@ export class Feedback {
     this.scene.tweens.add({targets:glint,x:x+(horizontal?span-GRID.cell/2:GRID.cell/2),y:y+(horizontal?GRID.cell/2:span-GRID.cell/2),alpha:0,duration:FEEDBACK.sweepDurationMs,ease:'Sine.Out',onComplete:()=>glint.destroy()});
   }
   points(points: number, x: number, y: number, reduced: boolean): void {
+    if(this.runtime){this.runtime.showPoints(points,x,y,reduced);return;}
     if(this.pointLabel)this.scene.tweens.killTweensOf(this.pointLabel);
     const label=this.pointLabel?this.pointLabel.setText(`+${points}`).setPosition(x,y).setAlpha(1).setVisible(true).setActive(true):this.scene.add.text(x,y,`+${points}`,{fontFamily:'Trebuchet MS, sans-serif',fontSize:'24px',fontStyle:'bold',color:'#dcdeff',stroke:'#17213d',strokeThickness:4}).setOrigin(.5).setDepth(20);
     this.scene.tweens.add({targets:label,y:reduced?y:y-30,alpha:0,duration:reduced?150:450,onComplete:()=>{if(this.pointLabel)label.setVisible(false).setActive(false);else label.destroy();}});
   }
   reset():void{
+    if(this.runtime){this.runtime.reset();return;}
     for(const label of [this.callout,this.pointLabel])if(label){this.scene.tweens.killTweensOf(label);label.setVisible(false).setActive(false);}
     if(this.flash){this.scene.tweens.killTweensOf(this.flash);this.flash.clear().setVisible(false).setActive(false);}
     for(const line of this.lines)for(const node of [line.beam,line.glint]){this.scene.tweens.killTweensOf(node);node.setVisible(false).setActive(false);}
   }
+  update(delta:number):void{this.runtime?.update(delta);}
+  get active():number{return this.runtime?.active??0;}
 }

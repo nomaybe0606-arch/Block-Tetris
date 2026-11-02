@@ -58,6 +58,8 @@ const appCode = scripts.map(path => readFileSync(path, 'utf8')).join('\n');
 assert(!/GRID_PULSE_DEV_REWARDED_ONLY|DevRewardedPlatform|DEV SDK error/.test(appCode), 'DEV rewarded mock leaked into production');
 assert(!scripts.some(path => path.includes('DevRewarded')), 'DEV rewarded chunk leaked into production');
 assert(!appCode.includes('happy-dom'), 'DOM test environment leaked into production');
+assert(!/grid-pulse-perf|GRID_PULSE_DEV_PERF_ONLY|DEV PERF/.test(appCode), 'DEV performance diagnostics leaked into production');
+assert(!scripts.some(path => path.includes('PerfDiagnostics')), 'DEV performance chunk leaked into production');
 assert(appCode.includes(`${base}assets/audio/ambient.`), 'Music URL does not use BASE_URL');
 assert(appCode.includes(`${base}assets/audio/`), 'Effect URLs do not use BASE_URL');
 // Validate emitted module references relative to the chunk that imports them.

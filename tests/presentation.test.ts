@@ -23,17 +23,17 @@ describe('placement presentation sequencing',()=>{
   it('renders an ordinary move once and keeps interaction immediately available',()=>{
     const s=setup();s.drop();expect(s.board.render).toHaveBeenCalledTimes(1);expect(s.board.landCells).toHaveBeenCalledTimes(1);expect(s.delegate.onSettled).toHaveBeenCalledTimes(1);expect(s.timers).toHaveLength(0);
   });
-  it('starts clear visuals and audio together and settles only after the clear',()=>{
-    const s=setup(false,false,true);s.drop();expect(s.delegate.onSettled).not.toHaveBeenCalled();
-    expect(s.timers.map(event=>event.delay)).toEqual([FEEDBACK.clearLeadMs,FEEDBACK.clearLeadMs+FEEDBACK.clearDurationMs]);
-    s.run(0);expect(s.delegate.onClearFeedback).toHaveBeenCalledTimes(1);expect(s.board.clearCells).toHaveBeenCalledTimes(1);expect(s.feedback.clear).toHaveBeenCalledTimes(1);
-    s.run(1);expect(s.board.render).toHaveBeenCalledTimes(2);expect(s.delegate.onSettled).toHaveBeenCalledTimes(1);
+  it('settles a clear immediately while audio follows the independent visual event',()=>{
+    const s=setup(false,false,true);s.drop();expect(s.delegate.onSettled).toHaveBeenCalledTimes(1);expect(s.timers).toHaveLength(0);
+    expect(s.board.render).toHaveBeenCalledTimes(1);expect(s.board.clearCells).not.toHaveBeenCalled();
+    expect(s.feedback.clear).toHaveBeenCalledWith(expect.objectContaining({cells:expect.any(Array),points:11}),false,expect.any(Function));
+    const callback=s.feedback.clear.mock.calls[0][2] as ()=>void;callback();expect(s.delegate.onClearFeedback).toHaveBeenCalledTimes(1);
   });
   it('lets the last placement finish before showing game over',()=>{
     const s=setup(true);s.drop();expect(s.delegate.onSettled).not.toHaveBeenCalled();expect(s.timers[0].delay).toBe(ANIMATION.endRoundHoldMs);s.run(0);expect(s.delegate.onSettled).toHaveBeenCalledTimes(1);
   });
   it('adds the final hold after, rather than during, line clearing',()=>{
-    const s=setup(true,false,true);s.drop();s.run(0);s.run(1);expect(s.delegate.onSettled).not.toHaveBeenCalled();expect(s.timers[2].delay).toBe(ANIMATION.endRoundHoldMs);s.run(2);expect(s.delegate.onSettled).toHaveBeenCalledTimes(1);
+    const s=setup(true,false,true);s.drop();expect(s.delegate.onSettled).not.toHaveBeenCalled();expect(s.timers).toHaveLength(1);expect(s.timers[0].delay).toBe(ANIMATION.endRoundHoldMs+FEEDBACK.clearLeadMs+FEEDBACK.clearDurationMs);s.run(0);expect(s.delegate.onSettled).toHaveBeenCalledTimes(1);expect(s.board.render).toHaveBeenCalledTimes(1);
   });
   it('omits the extra end hold in Reduced Motion',()=>{
     const s=setup(true,true);s.drop();expect(s.timers).toHaveLength(0);expect(s.delegate.onSettled).toHaveBeenCalledTimes(1);expect(s.board.landCells).toHaveBeenCalledWith(expect.anything(),true);

@@ -9,6 +9,7 @@ import type { PieceTransform } from '../input/dragGeometry';
 
 export class BoardRenderer {
   readonly root: Phaser.GameObjects.Container;
+  readonly clearLayer:Phaser.GameObjects.Container;
   private blocks: Phaser.GameObjects.Container;
   private tray: Phaser.GameObjects.Container;
   private preview: Phaser.GameObjects.Graphics;
@@ -37,10 +38,10 @@ export class BoardRenderer {
     const surround=scene.add.image(240,425,'board-frame').setDisplaySize(480,850);
     const ambient=scene.add.image(240,438,'neon-glow').setTint(0x6b6dff).setDisplaySize(550,590).setAlpha(.17).setBlendMode('ADD');
     const glass=scene.add.image(240,438,'board-glass').setDisplaySize(432,432);
-    this.blocks = scene.add.container(); this.tray = scene.add.container();
+    this.clearLayer=scene.add.container();this.blocks = scene.add.container(); this.tray = scene.add.container();
     this.tutorial = scene.add.graphics(); this.preview = scene.add.graphics();this.previewOld=scene.add.graphics();
     this.previewHalo=scene.add.image(0,0,'neon-glow').setBlendMode('ADD').setAlpha(0);
-    this.root.add([ambient,surround,glass,this.blocks,this.tutorial,this.previewHalo,this.previewOld,this.preview,this.tray]);
+    this.root.add([ambient,surround,glass,this.clearLayer,this.blocks,this.tutorial,this.previewHalo,this.previewOld,this.preview,this.tray]);
     // Fixed board and drag objects: pointer movement and ordinary moves allocate no images.
     for(let index=0;index<64;index++){
       const x=index%8,y=Math.floor(index/8);
@@ -72,6 +73,7 @@ export class BoardRenderer {
     if(reduced)return;
     for(const [x,y] of cells){
       const block=this.cells.get(`${x}:${y}`)!;this.scene.tweens.killTweensOf(block);
+      if(!block.visible)continue;
       block.setDisplaySize(52,46);
       this.scene.tweens.add({targets:block,scaleX:49/128,scaleY:49/128,duration:ANIMATION.landMs,ease:'Back.Out'});
     }
@@ -130,7 +132,7 @@ export class BoardRenderer {
   }
   trayTransform(index: number): PieceTransform | null {
     const piece=this.slots[index];
-    return piece?.visible&&piece.alpha>0?{x:piece.x,y:piece.y,scale:piece.scaleX}:null;
+    return piece?.visible&&piece.scaleX>0?{x:piece.x,y:piece.y,scale:piece.scaleX}:null;
   }
   trayHome(index:number):PieceTransform{return {x:TRAY.centers[index],...this.home};}
   slotVisible(index: number, visible: boolean): void { this.slots[index]?.setVisible(visible); }

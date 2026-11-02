@@ -10,6 +10,7 @@ import { Interface, type Modal, type Screen } from './ui/Interface';
 import { SwapController } from './ui/SwapController';
 import { strings } from './localization/strings';
 import { MONETIZATION } from './config/monetization';
+import type { ClearEvent } from './rendering/ClearEvent';
 
 const seed = () => crypto.getRandomValues(new Uint32Array(1))[0];
 export class App implements SceneDelegate {
@@ -20,7 +21,6 @@ export class App implements SceneDelegate {
   private ui:Interface;
   private audio:AudioService;
   private game:Phaser.Game;
-  private settled=true;
   private training=false;
   private tutorialReturn:Screen='menu';
   private beforeRestart:Modal=null;
@@ -62,13 +62,13 @@ export class App implements SceneDelegate {
   showSwapControl():boolean{return !this.training&&this.platform.rewardedSupported&&this.state.moves>=MONETIZATION.swapUnlockAfterPlacedPieces;}
   pixelRatio():number{return Math.min(window.devicePixelRatio||1,2);}
   isTutorial():boolean{return this.training;}
-  canInteract():boolean{return (this.screen==='game'||this.screen==='tutorial')&&!this.modal&&!this.platform.paused&&!this.swap.busy&&!this.swap.savePending&&!this.state.over&&this.settled;}
+  canInteract():boolean{return (this.screen==='game'||this.screen==='tutorial')&&!this.modal&&!this.platform.paused&&!this.swap.busy&&!this.swap.savePending&&!this.state.over;}
   onPick():void{this.audio.play('pick');}
   onPlace(slot:number,x:number,y:number):Placement|null{
     if(!this.canInteract())return null;
     const result=placePiece(this.state,slot,x,y);if(!result)return null;
     this.platform.gameplayAction();
-    this.state=result.state;this.settled=result.cleared.length===0;
+    this.state=result.state;
     if(!this.training){
       this.profile.best=Math.max(this.profile.best,this.state.best);this.profile.maxCombo=Math.max(this.profile.maxCombo,this.state.maxCombo);
       this.profile.totalLines+=result.rows.length+result.columns.length;this.profile.game=this.state;this.save();
@@ -77,11 +77,10 @@ export class App implements SceneDelegate {
     if(!this.training&&!this.recordAnnounced&&this.state.score>this.recordTarget){this.recordAnnounced=true;this.audio.play('record');this.scene.record();this.ui.record(this.reducedMotion()||!this.intenseEffects());}
     this.render(true);return result;
   }
-  onClearFeedback(result:Placement):void{
-    this.audio.play(result.state.combo>1||result.rows.length+result.columns.length>1?'combo':'clear');
+  onClearFeedback(event:ClearEvent):void{
+    this.audio.play(event.combo>1||event.rows.length+event.columns.length>1?'combo':'clear');
   }
   onSettled():void{
-    this.settled=true;
     if(this.training&&this.state.lines>0){this.modal='tutorial-success';this.render();}
     else if(this.state.over){this.modal='over';this.audio.setActive(false);this.render();this.platform.gameOver(this.state.id);}
   }
@@ -123,7 +122,6 @@ export class App implements SceneDelegate {
         if(!this.modal&&this.screen==='game')this.platform.message('level_resumed');this.render();
       });return;
     }
-    if(!this.settled&&!['settings','close'].includes(action))return;
     this.audio.play('ui');
     if(action==='settings'){this.scene.cancel();this.modal='settings';if(this.screen==='game')this.platform.message('level_paused');}
     else if(action==='play'){
@@ -147,11 +145,11 @@ export class App implements SceneDelegate {
     this.render();
   }
   private startTutorial():void{
-    this.tutorialReturn=this.screen;this.training=true;this.screen='tutorial';this.modal=null;this.settled=true;
+    this.tutorialReturn=this.screen;this.training=true;this.screen='tutorial';this.modal=null;
     this.state=tutorialGame(seed(),this.profile.best);this.scene.cancel();this.scene.show(true);this.scene.refresh(true);this.render();
   }
   private startGame(fresh:boolean):void{
-    this.scene.cancel();this.training=false;this.screen='game';this.modal=null;this.settled=true;
+    this.scene.cancel();this.training=false;this.screen='game';this.modal=null;
     this.state=!fresh&&this.profile.game&&!this.profile.game.over?this.profile.game:newGame(seed(),this.profile.best);
     this.recordTarget=this.profile.best;this.recordAnnounced=this.state.score>=this.recordTarget&&this.state.score>0;
     this.profile.game=this.state;this.scene.show(true);this.scene.refresh(true);this.audio.setActive(true);

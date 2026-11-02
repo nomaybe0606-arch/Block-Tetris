@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import { COLORS } from '../config/layout';
+import { createFeedbackAtlas } from './FeedbackAtlas';
 
 export function createTextures(scene: Phaser.Scene): void {
+  createFeedbackAtlas(scene);
   COLORS.forEach((color, index) => {
     const texture = scene.textures.createCanvas(`block-${index + 1}`, 128, 128)!;
     const ctx = texture.context;

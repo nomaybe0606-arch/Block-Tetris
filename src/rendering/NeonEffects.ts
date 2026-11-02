@@ -14,12 +14,14 @@ export class NeonEffects {
   private cursor=0;private trailCursor=0;private pulseCursor=0;private lastTrail=0;
   private target={x:0,y:0};private dragging=false;private enabled=true;private quality=1;private slowFrames=0;
   private particleCredit=0;
+  private allNodes:Phaser.GameObjects.Image[]=[];
   constructor(private scene:Phaser.Scene){
     const make=(key:string,depth:number)=>scene.add.image(0,0,key).setDepth(depth).setVisible(false).setActive(false);
     this.particles=Array.from({length:ANIMATION.particlePoolSize},()=>make('particle',16));
     this.trails=Array.from({length:ANIMATION.maxTrail},()=>make('neon-glow',24).setBlendMode('ADD'));
     this.pulses=Array.from({length:8},()=>make('neon-glow',14).setBlendMode('ADD'));
     this.halo=make('neon-glow',26).setBlendMode('ADD');this.shadow=make('neon-glow',25).setTint(0x000000);
+    this.allNodes=[...this.particles,...this.trails,...this.pulses,this.halo,this.shadow];
   }
   configure(reduced:boolean,intense:boolean,fps:number):void{
     const enabled=!reduced&&intense;
@@ -71,7 +73,7 @@ export class NeonEffects {
     this.scene.tweens.add({targets:node,scaleX:node.scaleX*1.12,scaleY:node.scaleY*1.12,alpha:0,duration:260,onComplete:()=>node.setActive(false).setVisible(false)});
   }
   placement(result:Placement,color:number):void{
-    for(const [x,y] of result.placed.filter((_,i)=>i%2===0).slice(0,4))this.pulse(GRID.x+x*52+26,GRID.y+y*52+26,112,112,this.color(color),.23);
+    for(let i=0;i<result.placed.length&&i<8;i+=2){const [x,y]=result.placed[i];if(result.state.board[y][x])this.pulse(GRID.x+x*52+26,GRID.y+y*52+26,112,112,this.color(color),.23);}
   }
   clearAccent(result:Placement,board:Board):void{
     for(const [x,y] of result.cleared.filter((_,i)=>i%8===0).slice(0,6))this.pulse(GRID.x+x*52+26,GRID.y+y*52+26,160,160,this.color(board[y][x]),.25);
@@ -85,7 +87,8 @@ export class NeonEffects {
       this.scene.tweens.add({targets:node,x:b.x,y:b.y,alpha:0,duration,ease:'Sine.InOut',onComplete:()=>node.setActive(false).setVisible(false)});
     }
   }
-  private nodes(){return [...this.particles,...this.trails,...this.pulses,this.halo,this.shadow];}
+  get active():number{let count=0;for(const node of this.allNodes)if(node.active&&node.visible)count++;return count;}
+  private nodes(){return this.allNodes;}
   reset():void{this.dragging=false;this.particleCredit=0;for(const node of this.nodes()){this.scene.tweens.killTweensOf(node);node.setVisible(false).setActive(false);}}
   destroy():void{for(const node of this.nodes()){this.scene.tweens.killTweensOf(node);node.destroy();}}
 }
