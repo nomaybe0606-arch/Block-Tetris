@@ -1,12 +1,11 @@
 import type Phaser from 'phaser';
 import { sprite } from './SpriteAtlas';
 
-export const COMBO_BURST_MS=440;
 const colors=[0x8cfff0,0x74e9ff,0xb7a0ff,0xd39aff,0xff9cdd,0xffd586,0xffe5a1];
 const directions=Array.from({length:6},(_,i)=>({x:Math.cos(i*Math.PI/3),y:Math.sin(i*Math.PI/3)}));
-export function comboStyle(combo:number):{level:number;scale:number;color:number;glow:number}{
+export function comboStyle(combo:number):{level:number;scale:number;color:number;glow:number;duration:number}{
   const level=Math.max(2,Math.min(8,Math.floor(combo))),power=(level-2)/6;
-  return {level,scale:.76+.39*power,color:colors[level-2],glow:.16+.19*power};
+  return {level,scale:.86+.43*power,color:colors[level-2],glow:.16+.19*power,duration:520+30*(level-2)};
 }
 export function createComboAtlas(scene:Phaser.Scene):void{
   const atlas=scene.textures.createCanvas('combo-labels',1024,512)!,ctx=atlas.context;
@@ -21,7 +20,7 @@ export function createComboAtlas(scene:Phaser.Scene):void{
 export class ComboBurst{
   readonly root:Phaser.GameObjects.Container;
   private glow:Phaser.GameObjects.Image;private ring:Phaser.GameObjects.Image;private label:Phaser.GameObjects.Image;
-  private sparks:Phaser.GameObjects.Image[]=[];private age=-1;private reduced=false;private scale=1;private intensity=0;private glowAlpha=0;
+  private sparks:Phaser.GameObjects.Image[]=[];private age=-1;private reduced=false;private scale=1;private intensity=0;private glowAlpha=0;private duration=520;
   constructor(scene:Phaser.Scene){
     this.root=scene.add.container().setDepth(21).setVisible(false).setActive(false);
     this.glow=sprite(scene,0,0,'neon-glow').setBlendMode('ADD');this.ring=sprite(scene,0,0,'combo-ring').setBlendMode('ADD');
@@ -30,20 +29,20 @@ export class ComboBurst{
     this.label=scene.add.image(0,0,'combo-labels','en-2');this.root.add(this.label);
   }
   show(combo:number,x:number,y:number,reduced:boolean,language:'en'|'ru',sparkBudget=6):void{
-    const style=comboStyle(combo);this.age=0;this.reduced=reduced;this.scale=style.scale;this.intensity=(style.level-2)/6;this.glowAlpha=style.glow;
+    const style=comboStyle(combo);this.age=0;this.reduced=reduced;this.scale=style.scale;this.intensity=(style.level-2)/6;this.glowAlpha=style.glow;this.duration=reduced?150:style.duration;
     this.root.setPosition(x,y).setVisible(true).setActive(true);this.label.setPosition(0,0).setFrame(`${language}-${style.level}`).setTint(style.color).setAlpha(1).setScale(reduced?style.scale:style.scale*.62);
-    this.glow.setTint(style.color).setDisplaySize(210+70*this.intensity,90+30*this.intensity).setAlpha(reduced?0:style.glow).setVisible(!reduced);
+    this.glow.setTint(style.color).setDisplaySize(235+75*this.intensity,100+32*this.intensity).setAlpha(reduced?0:style.glow).setVisible(!reduced);
     this.ring.setTint(style.color).setDisplaySize(110,110).setAlpha(reduced?0:.25+.3*this.intensity).setVisible(!reduced);
     for(let i=0;i<6;i++)this.sparks[i].setTint(style.color).setVisible(!reduced&&i<Math.min(sparkBudget,2+Math.round(4*this.intensity)));
     this.draw(0);
   }
-  update(delta:number):void{if(this.age<0)return;this.age+=Math.max(0,delta);const duration=this.reduced?150:COMBO_BURST_MS;if(this.age>=duration){this.reset();return;}this.draw(this.age/duration);}
+  update(delta:number):void{if(this.age<0)return;this.age+=Math.max(0,delta);if(this.age>=this.duration){this.reset();return;}this.draw(this.age/this.duration);}
   private draw(t:number):void{
     this.label.setAlpha(1-t*t);if(this.reduced)return;
     const p=Math.min(1,this.age/150),a=p-1,back=1+2.70158*a*a*a+1.70158*a*a;
     this.label.setScale(this.scale*(.62+.38*back)).setY(-12*t);
-    this.glow.setAlpha(this.glowAlpha*(1-t)*(1-t));this.ring.setDisplaySize(110+(100+60*this.intensity)*t,110+(100+60*this.intensity)*t).setAlpha((.25+.3*this.intensity)*(1-t)**2);
-    for(let i=0;i<6;i++){const direction=directions[i],radius=45+(45+30*this.intensity)*t;this.sparks[i].setPosition(direction.x*radius,direction.y*radius*.55).setScale(.5+.5*this.intensity).setAlpha(.8*(1-t)**2);}
+    this.glow.setAlpha(this.glowAlpha*(1-t)*(1-t));const ringSize=120+(110+65*this.intensity)*t;this.ring.setDisplaySize(ringSize,ringSize).setAlpha((.25+.3*this.intensity)*(1-t)**2);
+    for(let i=0;i<6;i++){const direction=directions[i],radius=50+(50+33*this.intensity)*t;this.sparks[i].setPosition(direction.x*radius,direction.y*radius*.55).setScale(.55+.55*this.intensity).setAlpha(.8*(1-t)**2);}
   }
   reset():void{this.age=-1;this.root.setVisible(false).setActive(false);}
   get playing():boolean{return this.age>=0;}

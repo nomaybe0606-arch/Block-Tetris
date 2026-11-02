@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {ComboBurst,comboStyle,COMBO_BURST_MS} from '../src/rendering/ComboBurst';
+import {ComboBurst,comboStyle} from '../src/rendering/ComboBurst';
 import {ClearEffects} from '../src/rendering/ClearEffects';
 import {renderScene} from './helpers/renderScene';
 describe('progressively stronger combo celebration',()=>{
@@ -14,10 +14,19 @@ describe('progressively stronger combo celebration',()=>{
     const s=renderScene(),burst=new ComboBurst(s.scene);burst.show(7,240,347,false,language);
     expect(s.nodes.find(node=>node.key==='combo-labels')!.frame).toBe(`${language}-7`);expect(s.raw.add.text).not.toHaveBeenCalled();
   });
-  it('makes x8 larger, brighter and richer in sparks without lengthening the animation',()=>{
+  it('makes x8 larger, brighter and richer in sparks with a modestly longer animation',()=>{
     const s=renderScene(),burst=new ComboBurst(s.scene),label=s.nodes.find(node=>node.key==='combo-labels')!,glow=s.nodes.find(node=>node.key==='neon-glow')!;
-    burst.show(2,240,347,false,'en');const smallGlow=glow.alpha,smallCount=burst.active;burst.update(160);const small=label.scaleX;burst.update(COMBO_BURST_MS-160);expect(burst.playing).toBe(false);
-    burst.show(8,240,347,false,'en');expect(glow.alpha).toBeGreaterThan(smallGlow);expect(burst.active).toBeGreaterThan(smallCount);burst.update(160);expect(label.scaleX).toBeGreaterThan(small);burst.update(COMBO_BURST_MS-160);expect(burst.playing).toBe(false);
+    burst.show(2,240,347,false,'en');const smallGlow=glow.alpha,smallCount=burst.active;burst.update(160);const small=label.scaleX;burst.update(comboStyle(2).duration-160);expect(burst.playing).toBe(false);
+    burst.show(8,240,347,false,'en');expect(glow.alpha).toBeGreaterThan(smallGlow);expect(burst.active).toBeGreaterThan(smallCount);burst.update(160);expect(label.scaleX).toBeGreaterThan(small);burst.update(comboStyle(2).duration-160);expect(burst.playing).toBe(true);burst.update(comboStyle(8).duration-comboStyle(2).duration);expect(burst.playing).toBe(false);
+  });
+  it('extends each multiplier from 520 to 700ms without slowing the initial pop',()=>{
+    const s=renderScene(),burst=new ComboBurst(s.scene),label=s.nodes.find(node=>node.key==='combo-labels')!;
+    let previous=0;
+    for(let level=2;level<=8;level++){
+      const style=comboStyle(level);expect(style.duration).toBeGreaterThan(previous);expect(style.duration).toBeLessThanOrEqual(700);previous=style.duration;
+      burst.show(level,240,347,false,'en');burst.update(150);expect(label.scaleX).toBeCloseTo(style.scale);burst.update(style.duration-151);expect(burst.playing).toBe(true);burst.update(1);expect(burst.playing).toBe(false);
+    }
+    expect(comboStyle(2).duration).toBe(520);expect(comboStyle(8).duration).toBe(700);
   });
   it('reuses the same nine images for 1000 consecutive combo bursts without tweens',()=>{
     const s=renderScene(),burst=new ComboBurst(s.scene),allocated=s.nodes.length;
