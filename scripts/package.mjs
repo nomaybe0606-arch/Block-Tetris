@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { deflateRawSync } from 'node:zlib';
-const root=resolve('dist'),output=resolve('artifacts/grid-pulse-qa.zip');
+const {version}=JSON.parse(readFileSync(resolve('package.json'),'utf8'));
+const root=resolve('dist'),output=resolve(`artifacts/grid-tetris-${version}-platform.zip`);
 const table=Array.from({length:256},(_,n)=>{let c=n;for(let i=0;i<8;i++)c=(c&1)?0xedb88320^(c>>>1):c>>>1;return c>>>0;});
 function crc32(data){let c=0xffffffff;for(const byte of data)c=table[(c^byte)&255]^(c>>>8);return(c^0xffffffff)>>>0;}
 function walk(dir){return readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(join(dir,e.name)):[join(dir,e.name)]);}

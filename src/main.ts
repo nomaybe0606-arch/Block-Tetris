@@ -20,6 +20,6 @@ async function boot():Promise<void>{
   const {App}=await import('./App');new App(platform,profile);
 }
 void boot().catch(error=>{
-  console.error('Grid Pulse startup failed',error);
+  console.error('Grid Tetris startup failed',error);
   const text=document.querySelector('#loading-text');if(text)text.textContent='Unable to start. Please reload the page. / Перезагрузите страницу.';
 });

@@ -1,4 +1,4 @@
-name: Deploy Grid Pulse to GitHub Pages
+name: Deploy Grid Tetris to GitHub Pages
 
 on:
   push:

@@ -1,4 +1,4 @@
-# Grid Pulse 2.0
+# Grid Tetris 2.0.4
 
 Полноценный локальный проект классической головоломки 8×8: TypeScript, Phaser 3, Vite. Собственные блоки с фасками, SVG-иконки и семь оригинальных OGG-ассетов. React и сервер не нужны.
 
@@ -26,7 +26,7 @@ npm run package          # переносимый ZIP только для sandbo
 
 Dev-сервер по-прежнему работает от `/`, production и preview — от `/Block-Tetris/`. GitHub Actions собирает и загружает `dist` сам; эту папку не нужно коммитить. Открывать игру через HTTP, а не `file://`.
 
-`npm run package` отдельно создаёт сборку с относительными путями и `artifacts/grid-pulse-qa.zip` для последующего QA в sandbox Playgama/Яндекс/VK. Это не альтернативный способ хостинга. `index.html` находится в корне ZIP. После такой команды для GitHub Pages снова выполнить `npm run build`.
+`npm run package` отдельно создаёт сборку с относительными путями и `artifacts/grid-tetris-2.0.4-platform.zip` для последующего QA в sandbox Playgama/Яндекс/VK. Это не альтернативный способ хостинга. `index.html` находится в корне ZIP. После такой команды для GitHub Pages снова выполнить `npm run build`.
 
 ## Что работает
 
@@ -111,7 +111,7 @@ GitHub Pages используется для тестирования геймп
 
 Официальный npm SDK `@playgama/bridge@2.4.0` и официальный Vite-плагин с `mode: 'local'`. SDK находится в сборке отдельным заменяемым `playgama-bridge.js`, CDN для игрового кода и ассетов не нужен.
 
-В `public/playgama-bridge-config.json` заданы официальные `disableLoadingLogo: true` и `loadingScreenType: "none"`. У версии 2.4.0 оба параметра поддерживаются; без них SDK по умолчанию создаёт загрузочный логотип. Конфигурация читается до создания его визуальных элементов, поэтому DOM SDK не скрывается и не изменяется. Остаётся собственная загрузка Grid Pulse; порядок инициализации, Storage и lifecycle сохранены. Основание: [исходник SDK 2.4.0, setupLoadingVisuals](https://github.com/Playgama/bridge/blob/v2.4.0/src/PlaygamaBridge.ts#L311-L334). Если хост требует своё загрузочное представление, адаптировать platform override по его официальным правилам и проверить в sandbox; чужой host SDK не модифицируется.
+В `public/playgama-bridge-config.json` заданы официальные `disableLoadingLogo: true` и `loadingScreenType: "none"`. У версии 2.4.0 оба параметра поддерживаются; без них SDK по умолчанию создаёт загрузочный логотип. Конфигурация читается до создания его визуальных элементов, поэтому DOM SDK не скрывается и не изменяется. Остаётся собственная загрузка Grid Tetris; порядок инициализации, Storage и lifecycle сохранены. Основание: [исходник SDK 2.4.0, setupLoadingVisuals](https://github.com/Playgama/bridge/blob/v2.4.0/src/PlaygamaBridge.ts#L311-L334). Если хост требует своё загрузочное представление, адаптировать platform override по его официальным правилам и проверить в sandbox; чужой host SDK не модифицируется.
 
 Порядок: `bridge.initialize()` → `bridge.storage.get()` → проверка профиля → запуск Phaser → первое интерактивное меню → `game_ready`.
 

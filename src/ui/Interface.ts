@@ -138,7 +138,7 @@ export class Interface {
         <div class="menu-secondary">${hasGame?action('new',c.newGame,'text-button','restart'):''}${action('tutorial',c.howTo,'text-button','help')}</div>
         <p class="quiet-line"><span></span>${c.relaxed}<span></span></p>
         <div class="menu-stats"><div><strong>${number(m.profile.totalLines)}</strong><span>${c.totalLines}</span></div><div class="stat-divider"></div><div><strong>${m.profile.maxCombo}×</strong><span>${c.maxCombo}</span></div></div>
-      </div><footer class="menu-footer">8 × 8 <span>·</span> GRID PULSE</footer></div>`;
+      </div><footer class="menu-footer">8 × 8 <span>·</span> GRID TETRIS</footer></div>`;
   }
   private game(m:UIModel,c:Copy):string {
     const training=m.screen==='tutorial';
@@ -157,7 +157,7 @@ export class Interface {
     let body='';
     if(m.modal==='settings') {
       const toggle=(key:string,title:string,glyph:string,help='')=>`<label class="setting-row"><span class="setting-icon">${icon(glyph)}</span><span class="setting-title">${title}${help?`<small>${help}</small>`:''}</span><input type="checkbox" role="switch" data-setting="${key}" ${(m.profile.settings[key as keyof typeof m.profile.settings])?'checked':''}/><span class="switch" aria-hidden="true"></span></label>`;
-      body=`<div class="modal-heading"><div><p class="eyebrow">GRID PULSE</p><h2>${c.settings}</h2></div>${iconButton('close',c.close,'close')}</div>
+      body=`<div class="modal-heading"><div><p class="eyebrow">GRID TETRIS</p><h2>${c.settings}</h2></div>${iconButton('close',c.close,'close')}</div>
         <div class="settings-list">${toggle('sound',c.sound,'sound')}${toggle('music',c.music,'music')}${toggle('mute',c.mute,'sound')}${toggle('reducedMotion',c.motion,'moon',c.motionHelp)}${toggle('intenseEffects',c.effects,'sparkle')}
         <label class="setting-row"><span class="setting-icon">${icon('globe')}</span><span class="setting-title">${c.language}</span><select data-setting="language" aria-label="${c.language}"><option value="en" ${m.profile.settings.language==='en'?'selected':''}>English</option><option value="ru" ${m.profile.settings.language==='ru'?'selected':''}>Русский</option></select></label></div>
         ${action('close',c.close,'primary')}${m.screen==='game'?`<div class="settings-actions">${action('new',c.newGame,'text-button','restart')}${action('home',c.home,'text-button','home')}</div>`:''}`;

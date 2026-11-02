@@ -1,10 +1,10 @@
-# Grid Pulse: GitHub Pages в репозитории Block-Tetris
+# Grid Tetris: GitHub Pages в репозитории Block-Tetris
 
 Репозиторий: https://github.com/nomaybe0606-arch/Block-Tetris
 
 Адрес игры после успешного deployment: https://nomaybe0606-arch.github.io/Block-Tetris/
 
-Публикация выполняется только через GitHub Pages. Название игры остаётся Grid Pulse; имя репозитория и префикс URL — **Block-Tetris**, с учётом регистра. Переименование выполнено 2 ноября 2026; прежнее имя — Block-Puzzle.
+Публикация выполняется только через GitHub Pages. Название игры — Grid Tetris (ранее Grid Pulse); имя репозитория и префикс URL — **Block-Tetris**, с учётом регистра. Переименование репозитория выполнено 2 ноября 2026; прежнее имя — Block-Puzzle.
 
 Репозиторий используется публично по разрешению владельца. При переходе в private проверьте доступность Pages на вашем тарифе: GitHub может отключить сайт, и Configure GitHub Pages получит 404. В диагностике 2 ноября попытка включения была отклонена с HTTP 422: Your current plan does not support GitHub Pages for this repository. Проверки workflow отключать не нужно.
 
@@ -50,7 +50,7 @@
 
 ```sh
 git add .
-git commit -m "Update Grid Pulse"
+git commit -m "Update Grid Tetris"
 git push origin main
 ```
 
@@ -60,7 +60,7 @@ git push origin main
 
 1. Откройте https://github.com/nomaybe0606-arch/Block-Tetris/settings/pages под аккаунтом владельца.
 2. В блоке **Build and deployment** выберите **Source → GitHub Actions**. Не выбирайте публикацию исходников из ветки: проект требует Vite build.
-3. Откройте **Actions → Deploy Grid Pulse to GitHub Pages** и выполните **Run workflow → main → Run workflow**, либо **Re-run failed jobs** у исправленного запуска.
+3. Откройте **Actions → Deploy Grid Tetris to GitHub Pages** и выполните **Run workflow → main → Run workflow**, либо **Re-run failed jobs** у исправленного запуска.
 4. Если GitHub показывает ожидание environment approval, откройте запуск, нажмите **Review deployments**, выберите `github-pages` и подтвердите публикацию, если это предусмотрено вашими правилами репозитория.
 5. Дождитесь зелёных `build` и `deploy`, затем проверьте ссылку сайта и Network на 404 для SDK, JSON, JS/CSS, favicon и аудио.
 

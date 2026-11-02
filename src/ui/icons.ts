@@ -18,4 +18,4 @@ const paths: Record<string, string> = {
 export function icon(name: string, className = ''): string {
   return `<svg class="icon ${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] ?? paths.sparkle}</svg>`;
 }
-export const logo = '<span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>GRID <b>PULSE</b></span>';
+export const logo = '<span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>GRID <b>TETRIS</b></span>';
