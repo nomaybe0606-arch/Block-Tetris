@@ -1,6 +1,6 @@
-# Grid Tetris assets
+# Grid Pulse assets
 
-All visual artwork, UI icons, block textures, effects, and audio compositions in this project were created specifically for Grid Tetris. No Block Blast assets or third-party sample packs were used.
+All visual artwork, UI icons, block textures, effects, and audio compositions in this project were created specifically for Grid Pulse. No Block Blast assets or third-party sample packs were used.
 
 ## Audio
 
@@ -8,7 +8,7 @@ Files: `audio/pick`, `place`, `clear`, `combo`, `record`, `ui`, `ambient`, each 
 
 Original offline synthesis and composition: `scripts/generate-audio.mjs`, created for this project, 2026-10-31. Rendered as PCM and encoded to Ogg Vorbis and MP3 with FFmpeg. The ambient composition is a 32-second harmonic loop; effects are separate rendered assets. Runtime only plays these local files; it does not synthesize Web Audio tones. OGG is preferred for gapless looping; MP3 loop timing can vary by browser decoder.
 
-These original project assets may be used, modified and distributed, including commercially, with the Grid Tetris project, without attribution requirements. No exclusive ownership of purely AI-generated material is asserted where local law does not recognize it.
+These original project assets may be used, modified and distributed, including commercially, with the Grid Pulse project, without attribution requirements. No exclusive ownership of purely AI-generated material is asserted where local law does not recognize it.
 
 ## Graphics
 

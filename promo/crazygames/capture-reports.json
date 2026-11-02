@@ -1,0 +1,20 @@
+{
+  "landscape": {
+    "format": "landscape",
+    "moves": 6,
+    "lines": 4,
+    "combo": 3,
+    "clearEvents": 3,
+    "durationMs": 18041.30000001192,
+    "realTime": true
+  },
+  "portrait": {
+    "format": "portrait",
+    "moves": 6,
+    "lines": 4,
+    "combo": 3,
+    "clearEvents": 3,
+    "durationMs": 18042.29999998212,
+    "realTime": true
+  }
+}

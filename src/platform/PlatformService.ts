@@ -15,6 +15,8 @@ export interface PlatformPort {
   gameplayAction():void;
   /** Hosts with banner ads show one only where the player is not in a round. */
   setBanner?(visible:boolean):void;
+  /** Optional host telemetry; visuals never gate the next move. */
+  setGameplayActive?(active:boolean):void;
   /** Shown in settings only on hosts that allow external support links. */
   readonly supportUrl?:string;
 }

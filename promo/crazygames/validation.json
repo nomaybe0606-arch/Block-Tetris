@@ -1,0 +1,78 @@
+{
+  "covers": [
+    {
+      "path": "promo/crazygames/covers/grid-pulse-landscape.png",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 2364724,
+      "reviewedGrid": {
+        "rows": 8,
+        "columns": 8
+      }
+    },
+    {
+      "path": "promo/crazygames/covers/grid-pulse-portrait.png",
+      "width": 800,
+      "height": 1200,
+      "bytes": 1335520,
+      "reviewedGrid": {
+        "rows": 8,
+        "columns": 8
+      }
+    },
+    {
+      "path": "promo/crazygames/covers/grid-pulse-square.png",
+      "width": 800,
+      "height": 800,
+      "bytes": 1008024,
+      "reviewedGrid": {
+        "rows": 8,
+        "columns": 8
+      }
+    }
+  ],
+  "videos": [
+    {
+      "path": "promo/crazygames/video/grid-pulse-landscape.mp4",
+      "width": 1920,
+      "height": 1080,
+      "duration": 18,
+      "fps": 30,
+      "codec": "h264",
+      "pixelFormat": "yuv420p",
+      "audio": false,
+      "bytes": 2483067,
+      "openingCoverMeanError": 6.081597222222222,
+      "capture": {
+        "format": "landscape",
+        "moves": 6,
+        "lines": 4,
+        "combo": 3,
+        "clearEvents": 3,
+        "durationMs": 18041.30000001192,
+        "realTime": true
+      }
+    },
+    {
+      "path": "promo/crazygames/video/grid-pulse-portrait.mp4",
+      "width": 1080,
+      "height": 1620,
+      "duration": 18,
+      "fps": 30,
+      "codec": "h264",
+      "pixelFormat": "yuv420p",
+      "audio": false,
+      "bytes": 2029693,
+      "openingCoverMeanError": 4.944408275462963,
+      "capture": {
+        "format": "portrait",
+        "moves": 6,
+        "lines": 4,
+        "combo": 3,
+        "clearEvents": 3,
+        "durationMs": 18042.29999998212,
+        "realTime": true
+      }
+    }
+  ]
+}

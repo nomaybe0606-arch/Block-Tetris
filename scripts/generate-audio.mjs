@@ -1,4 +1,4 @@
-// Original Grid Tetris compositions. Offline rendering only: runtime plays the committed OGG assets.
+// Original Grid Pulse compositions. Offline rendering only: runtime plays the committed OGG assets.
 // Requires ffmpeg on PATH; not required for installation, development, or production builds.
 import { mkdirSync, writeFileSync, unlinkSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';

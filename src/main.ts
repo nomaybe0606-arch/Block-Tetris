@@ -12,6 +12,7 @@ loaderStage(0.05,0.3);
 
 // Each host build bundles only its own SDK: the VK and Pikabu builds never load Playgama Bridge and vice versa.
 async function hostPlatform():Promise<PlatformPort>{
+  if(import.meta.env.MODE==='crazygames'){const {CrazyGamesPlatform}=await import('./platform/CrazyGamesPlatform');const platform=new CrazyGamesPlatform();await platform.initialize();return platform;}
   if(import.meta.env.MODE==='vk'){const {VkPlatform}=await import('./platform/VkPlatform');const platform=new VkPlatform();await platform.initialize();return platform;}
   if(import.meta.env.MODE==='pikabu'){const {PikabuPlatform}=await import('./platform/PikabuPlatform');const platform=new PikabuPlatform();await platform.initialize();return platform;}
   const {PlatformService}=await import('./platform/PlatformService');const platform=new PlatformService();await platform.initialize();return platform;
@@ -41,6 +42,6 @@ async function boot():Promise<void>{
   const {App}=await import('./App');new App(platform,profile);stopLoadingFit();
 }
 void boot().catch(error=>{
-  console.error('Grid Tetris startup failed',error);
+  console.error('Grid Pulse startup failed',error);
   const text=document.querySelector('#loading-text');if(text)text.textContent='Unable to start. Please reload the page. / Перезагрузите страницу.';
 });
