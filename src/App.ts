@@ -47,7 +47,7 @@ export class App implements SceneDelegate {
       type:Phaser.AUTO,parent:'game',width:VIEW.width*this.pixelRatio(),height:VIEW.height*this.pixelRatio(),transparent:true,
       render:RENDER,
       input:ENGINE_INPUT,
-      audio:{noAudio:true},fps:{target:60},scene:[new GameScene(this)],
+      audio:{noAudio:true},fps:{target:60,smoothStep:false},scene:[new GameScene(this)],
       scale:{mode:Phaser.Scale.NONE,width:VIEW.width*this.pixelRatio(),height:VIEW.height*this.pixelRatio()},
     });
     this.game.canvas.tabIndex=0;
@@ -68,6 +68,7 @@ export class App implements SceneDelegate {
   isTutorial():boolean{return this.training;}
   canInteract():boolean{return (this.screen==='game'||this.screen==='tutorial')&&!this.modal&&!this.platform.paused&&!this.swap.busy&&!this.swap.savePending&&!this.state.over;}
   onPick():void{this.audio.play('pick');}
+  audioStats():{audioBuffers:number;audioVoices:number}{return this.audio.stats;}
   onPlace(slot:number,x:number,y:number):Placement|null{
     if(!this.canInteract())return null;
     const result=placePiece(this.state,slot,x,y);if(!result)return null;

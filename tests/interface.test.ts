@@ -24,6 +24,11 @@ function setup(){
   const action=vi.fn(),ui=new Interface(action,vi.fn());ui.render(model);return {ui,model,action};
 }
 describe('stable game interface',()=>{
+  it('does not repaint an unchanged score on every high-refresh frame',()=>{
+    const {ui,model}=setup(),score=document.querySelector('#score-value')!;const write=vi.spyOn(score,'textContent','set');
+    model.state={...model.state,score:101};ui.render(model,true);for(let t=0;t<=240;t+=4)tick(t);
+    expect(score.textContent).toBe('101');expect(write.mock.calls.length).toBeLessThanOrEqual(2);expect(frames.size).toBe(0);
+  });
   it('retains HUD, controls and focus through scores, storage and pause updates',()=>{
     const {ui,model}=setup(),screen=document.querySelector('.game-ui'),score=document.querySelector('#score-value'),swap=document.querySelector('.swap-button');
     const settings=document.querySelector<HTMLButtonElement>('[data-action="settings"]')!;settings.focus();

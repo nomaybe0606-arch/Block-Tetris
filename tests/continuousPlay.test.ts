@@ -26,6 +26,10 @@ function setup(){
   scene.refresh();return {fake,board,neon,feedback,app,profile,platform,saved,delegate,scene,timers,drop:(slot:number,x:number,y:number)=>{Object.assign(scene,{slot});scene['drop'](x,y);}};
 }
 describe('continuous logical play during independent clearing',()=>{
+  it('finishes an effect at its real elapsed time after a missed frame instead of slowing its clock',()=>{
+    const s=setup();s.drop(0,7,0);const before=JSON.stringify(s.app.state);s.scene.update(0,500);
+    expect(s.feedback.active).toBe(0);expect(JSON.stringify(s.app.state)).toBe(before);expect(s.app.canInteract()).toBe(true);
+  });
   it('enables the next move before the first clear has even started visually',()=>{
     const s=setup();s.drop(0,7,0);expect(s.app.canInteract()).toBe(true);expect(s.feedback.active).toBeGreaterThan(0);expect(s.app.state.board[0]).toEqual(Array(8).fill(0));
     expect(s.app.state.score).toBe(11);expect(s.app.state.combo).toBe(1);expect(JSON.parse(s.saved.at(-1)!).game.score).toBe(11);
@@ -40,7 +44,7 @@ describe('continuous logical play during independent clearing',()=>{
     const order=s.board.root.list as unknown[];expect(order.indexOf(s.board.clearLayer)).toBeLessThan(order.indexOf(block.parent));
   });
   it('supports 100 rapid clearing placements with a fixed effects pool and correct combo/score',()=>{
-    const s=setup(),pool=s.board.clearLayer.list.length;let expected=0;
+    const s=setup(),pool=s.board.clearLayer.list.length,liveBudget=s.fake.nodes.filter(node=>!node.destroyed).length;let expected=0;
     for(let i=0;i<100;i++){
       s.app.state={...s.app.state,board:fixture().board,tray:fixture().tray};s.board.render(s.app.state.board);s.board.renderTray(s.app.state,false);
       const allocations=s.fake.nodes.length;s.drop(0,7,0);expected+=1+10*Math.min(i+1,8);
@@ -49,7 +53,7 @@ describe('continuous logical play during independent clearing',()=>{
     }
     expect(s.app.state.moves).toBe(100);expect(s.app.state.combo).toBe(100);expect(s.saved).toHaveLength(100);
     s.feedback.update(2000);s.neon.reset();s.fake.complete();expect(s.feedback.active).toBe(0);
-    expect(s.fake.nodes.filter(node=>!node.destroyed).length).toBeLessThan(500);
+    expect(s.fake.nodes.filter(node=>!node.destroyed).length).toBeLessThanOrEqual(liveBudget);
   });
   it('captures colors and coordinates without retaining mutable board data',()=>{
     const state=fixture(),before=state.board,result=placePiece(state,0,7,0)!,event=captureClear(result,before,2);

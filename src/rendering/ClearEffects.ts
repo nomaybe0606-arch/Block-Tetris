@@ -3,6 +3,7 @@ import { COLORS, GRID } from '../config/layout';
 import { FEEDBACK } from '../config/feedback';
 import type { ClearEvent } from './ClearEvent';
 import { FeedbackLabel } from './FeedbackAtlas';
+import { sprite, spriteTexture } from './SpriteAtlas';
 
 interface Ghost {node:Phaser.GameObjects.Image;start:number;end:number;wave:number;reduced:boolean}
 interface Beam {node:Phaser.GameObjects.Image;glint:Phaser.GameObjects.Image;start:number;end:number;x:number;y:number;horizontal:boolean;alpha:number}
@@ -19,7 +20,7 @@ export class ClearEffects {
   private sounds:Sound[]=Array.from({length:8},()=>({at:0,callback:null}));
   private callout:FeedbackLabel;private points:FeedbackLabel;
   constructor(scene:Phaser.Scene,private layer:Phaser.GameObjects.Container,private budget:(count:number)=>number){
-    const make=(key:string)=>{const node=scene.add.image(0,0,key).setVisible(false).setActive(false);layer.add(node);return node;};
+    const make=(key:string)=>{const node=sprite(scene,0,0,key).setVisible(false).setActive(false);layer.add(node);return node;};
     for(let i=0;i<128;i++)this.ghosts.push({node:make('block-1').setDisplaySize(49,49),start:0,end:-1,wave:0,reduced:false});
     for(let i=0;i<32;i++)this.beams.push({node:make('line-glow').setBlendMode('ADD'),glint:make('neon-glow').setBlendMode('ADD'),start:0,end:-1,x:0,y:0,horizontal:true,alpha:0});
     for(let i=0;i<32;i++)this.particles.push({node:make('particle').setBlendMode('ADD'),start:0,end:-1,x:0,y:0,vx:0,vy:0});
@@ -32,7 +33,7 @@ export class ClearEffects {
     for(let i=0;i<event.cells.length;i++){
       const cell=event.cells[i],ghost=this.ghosts[this.ghostCursor++%this.ghosts.length];
       ghost.start=start;ghost.end=start+duration;ghost.wave=reduced?0:Math.min(65,i*5);ghost.reduced=reduced;
-      ghost.node.setTexture(`block-${cell.color}`).setPosition(GRID.x+cell.x*52+26,GRID.y+cell.y*52+26).setDisplaySize(49,49).setAlpha(1).setVisible(true).setActive(true);
+      spriteTexture(ghost.node,`block-${cell.color}`);ghost.node.setPosition(GRID.x+cell.x*52+26,GRID.y+cell.y*52+26).setDisplaySize(49,49).setAlpha(1).setVisible(true).setActive(true);
     }
     const multi=event.rows.length+event.columns.length>1,color=multi?0xd1c3ff:0xa4fff0;
     if(!reduced){

@@ -3,6 +3,7 @@ import { ANIMATION } from '../config/animation';
 import { COLORS, GRID } from '../config/layout';
 import type { Board, Placement, Shape } from '../core/types';
 import type { DragPose } from '../input/dragGeometry';
+import { sprite } from './SpriteAtlas';
 
 /** Fixed pools: decorative lag never changes the drag pose or placement candidate. */
 export class NeonEffects {
@@ -16,7 +17,7 @@ export class NeonEffects {
   private particleCredit=0;
   private allNodes:Phaser.GameObjects.Image[]=[];
   constructor(private scene:Phaser.Scene){
-    const make=(key:string,depth:number)=>scene.add.image(0,0,key).setDepth(depth).setVisible(false).setActive(false);
+    const make=(key:string,depth:number)=>sprite(scene,0,0,key).setDepth(depth).setVisible(false).setActive(false);
     this.particles=Array.from({length:ANIMATION.particlePoolSize},()=>make('particle',16));
     this.trails=Array.from({length:ANIMATION.maxTrail},()=>make('neon-glow',24).setBlendMode('ADD'));
     this.pulses=Array.from({length:8},()=>make('neon-glow',14).setBlendMode('ADD'));
