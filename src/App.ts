@@ -166,6 +166,8 @@ export class App implements SceneDelegate {
     const c=strings[this.profile.settings.language];
     this.ui.render({screen:this.screen,modal:this.modal,state:this.state,profile:this.profile,paused:this.platform.paused,storageAvailable:this.platform.storageAvailable,supportUrl:this.platform.supportUrl,swap:this.swap.model(this.showSwapControl()&&this.screen==='game',key=>c[key])},animateScore);
     this.platform.setBanner?.(this.screen==='menu');
+    // CrazyGames tracks tab visibility itself; report actual menus/pauses, not focus loss.
+    this.platform.setGameplayActive?.((this.screen==='game'||this.screen==='tutorial')&&!this.modal&&!this.swap.busy&&!this.swap.savePending&&!this.state.over);
     this.game?.canvas.setAttribute('aria-label',this.profile.settings.language==='ru'?'Поле 8 на 8. Фигуры: клавиши 1, 2, 3; стрелки; Enter.':'8 by 8 board. Select a piece with 1, 2, 3; move with arrows; place with Enter.');
   }
 }

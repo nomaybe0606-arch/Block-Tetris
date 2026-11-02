@@ -5,6 +5,10 @@ import { join, resolve } from 'node:path';
 
 // Host builds that bring their own SDK instead of Playgama Bridge.
 const HOSTS: Record<string, { outDir: string; notice: string; license?: [string, string] }> = {
+  crazygames: {
+    outDir:'dist-crazygames',
+    notice:'## CrazyGames SDK v3\n\nLoaded at runtime from https://sdk.crazygames.com/crazygames-sdk-v3.js under CrazyGames platform terms; not redistributed in the ZIP.\n',
+  },
   vk: {
     outDir: 'dist-vk',
     notice: '## VK Bridge 3.0.2\n\nCopyright V Kontakte LLC. MIT license. Full license: `licenses/vk-bridge-MIT.txt`.\nSource: https://github.com/VKCOM/vk-bridge\n',
