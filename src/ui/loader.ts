@@ -44,5 +44,13 @@ export function hideLoader(): Promise<void> {
   });
 }
 
+/** Shows the loading text in Russian for Russian-speaking players; the markup default is English. */
+export function localizeLoader(language: string): void {
+  const ru = /^ru/i.test(language);
+  document.documentElement.lang = ru ? 'ru' : 'en';
+  const text = document.querySelector('#loading-text');
+  if (text && ru) text.textContent = 'Ловим твой ритм…';
+}
+
 /** Test hook: forgets the progress of a previous boot. */
 export function resetLoader(): void { stop(); shown = 0; limit = 0; }

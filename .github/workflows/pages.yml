@@ -44,6 +44,16 @@ jobs:
       - name: Verify assets and HTTP paths
         run: npm run verify:build
 
+      # Pikabu Games does not host builds, so its version is served from Pages at /Block-Tetris/pikabu/.
+      - name: Build Pikabu Games version
+        run: npx vite build --mode pikabu
+
+      - name: Verify Pikabu Games build
+        run: npm run verify:pikabu
+
+      - name: Add Pikabu Games version to the Pages site
+        run: cp -r dist-pikabu dist/pikabu
+
       - name: Upload dist for GitHub Pages
         uses: actions/upload-pages-artifact@v4
         with:

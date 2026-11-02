@@ -2,15 +2,18 @@ import './style.css';
 import type { PlatformPort } from './platform/PlatformService';
 import { defaultProfile, restoreProfile } from './platform/profile';
 import { fitFrameWhileLoading } from './ui/frameFit';
-import { loaderStage } from './ui/loader';
+import { loaderStage, localizeLoader } from './ui/loader';
 
 // Fit the loading screen at once: SDK init and the engine download can take seconds on a cold start.
 const stopLoadingFit=fitFrameWhileLoading();
+// The language is known for sure only after SDK init, so the loading screen uses the best early guess.
+localizeLoader(import.meta.env.MODE==='pikabu'?'ru':new URLSearchParams(location.search).get('vk_language')||navigator.language);
 loaderStage(0.05,0.3);
 
-// Each host build bundles only its own SDK: the VK build never loads Playgama Bridge and vice versa.
+// Each host build bundles only its own SDK: the VK and Pikabu builds never load Playgama Bridge and vice versa.
 async function hostPlatform():Promise<PlatformPort>{
   if(import.meta.env.MODE==='vk'){const {VkPlatform}=await import('./platform/VkPlatform');const platform=new VkPlatform();await platform.initialize();return platform;}
+  if(import.meta.env.MODE==='pikabu'){const {PikabuPlatform}=await import('./platform/PikabuPlatform');const platform=new PikabuPlatform();await platform.initialize();return platform;}
   const {PlatformService}=await import('./platform/PlatformService');const platform=new PlatformService();await platform.initialize();return platform;
 }
 async function boot():Promise<void>{

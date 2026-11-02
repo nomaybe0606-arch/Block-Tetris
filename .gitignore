@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-vk/
+dist-pikabu/
 artifacts/
 coverage/
 *.zip
