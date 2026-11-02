@@ -2,9 +2,11 @@ import Phaser from 'phaser';
 import { COLORS } from '../config/layout';
 import { createFeedbackAtlas } from './FeedbackAtlas';
 import { createSpriteAtlas } from './SpriteAtlas';
+import { createComboAtlas } from './ComboBurst';
 
 export function createTextures(scene: Phaser.Scene): void {
   createFeedbackAtlas(scene);
+  createComboAtlas(scene);
   COLORS.forEach((color, index) => {
     const texture = scene.textures.createCanvas(`block-${index + 1}`, 128, 128)!;
     const ctx = texture.context;
@@ -48,5 +50,6 @@ export function createTextures(scene: Phaser.Scene): void {
   const preview=scene.textures.createCanvas('preview-cell',128,128)!,p=preview.context;
   p.fillStyle='#ffffff';p.globalAlpha=.34;p.beginPath();p.roundRect(2,2,124,124,18);p.fill();p.globalAlpha=.8;p.lineWidth=5;p.strokeStyle='#ffffff';p.stroke();preview.refresh();
   const fill=scene.textures.createCanvas('preview-fill',128,128)!,f=fill.context;f.fillStyle='#ffffff';f.beginPath();f.roundRect(2,2,124,124,18);f.fill();fill.refresh();
+  const ring=scene.textures.createCanvas('combo-ring',128,128)!,r=ring.context;r.strokeStyle='#ffffff';r.lineWidth=3;r.beginPath();r.arc(64,64,53,0,Math.PI*2);r.stroke();ring.refresh();
   createSpriteAtlas(scene);
 }

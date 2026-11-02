@@ -20,6 +20,7 @@ export interface SceneDelegate {
   state: GameState; reducedMotion(): boolean; pixelRatio(): number; canInteract(): boolean; isTutorial(): boolean;
   intenseEffects():boolean;showSwapControl():boolean;
   audioStats?():{audioBuffers:number;audioVoices:number};
+  language?():'en'|'ru';
   onPlace(slot: number,x: number,y: number): Placement | null;
   onPick(): void; onClearFeedback(event: ClearEvent): void; onSettled(): void; onReady(scene: GameScene): void;
 }
@@ -43,7 +44,7 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     this.cameras.main.setZoom(this.delegate.pixelRatio()).centerOn(240,425);
     createTextures(this);
-    this.boardView=new BoardRenderer(this);this.neon=new NeonEffects(this);this.feedback=new Feedback(this,this.neon,this.boardView.clearLayer);this.swapAnimation=new SwapAnimation(this,this.boardView,this.neon);
+    this.boardView=new BoardRenderer(this);this.neon=new NeonEffects(this);this.feedback=new Feedback(this,this.neon,this.boardView.clearLayer,()=>this.delegate.language?.()??'en');this.swapAnimation=new SwapAnimation(this,this.boardView,this.neon);
     this.controls=new DragController(this.game.canvas,{
       enabled:()=>this.delegate.canInteract(),
       getPiece:slot=>{

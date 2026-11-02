@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 const entries:readonly [string,number,number,number,number][]=[
   ['board-glass',0,0,864,864],...Array.from({length:7},(_,i)=>[`block-${i+1}`,i*128,896,128,128] as [string,number,number,number,number]),
-  ['neon-glow',896,896,128,128],['line-glow',0,864,256,24],['particle',256,864,8,8],['preview-cell',896,0,128,128],['preview-fill',896,128,128,128],
+  ['neon-glow',896,896,128,128],['line-glow',0,864,256,24],['particle',256,864,8,8],['preview-cell',896,0,128,128],['preview-fill',896,128,128,128],['combo-ring',896,256,128,128],
 ];
 const names=new Set(entries.map(entry=>entry[0]));
 export function createSpriteAtlas(scene:Phaser.Scene):void{

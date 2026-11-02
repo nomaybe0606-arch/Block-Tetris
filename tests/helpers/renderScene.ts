@@ -5,6 +5,7 @@ export class RenderNode {
   x=0;y=0;scaleX=1;scaleY=1;alpha=1;visible=true;active=true;destroyed=false;tintTopLeft=0;text='';
   list:RenderNode[]=[];parent:RenderNode|null=null;textUpdates=0;
   blendMode='NORMAL';
+  frame:string|number=0;
   constructor(readonly kind:string,public key=''){}
   setPosition(x:number,y:number){this.x=x;this.y=y;return this;}
   setY(y:number){this.y=y;return this;}
@@ -14,7 +15,7 @@ export class RenderNode {
   setVisible(visible:boolean){this.visible=visible;return this;}
   setActive(active:boolean){this.active=active;return this;}
   setTexture(key:string){this.key=key;return this;}
-  setFrame(){return this;}
+  setFrame(frame:string|number){this.frame=frame;return this;}
   setTint(color:number){this.tintTopLeft=color;return this;}
   setText(text:string){this.text=text;this.textUpdates++;return this;}
   setDepth(){return this;}setBlendMode(mode:string){this.blendMode=mode;return this;}setOrigin(){return this;}setAngle(){return this;}

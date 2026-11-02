@@ -4,6 +4,7 @@ import { FEEDBACK } from '../config/feedback';
 import type { ClearEvent } from './ClearEvent';
 import { FeedbackLabel } from './FeedbackAtlas';
 import { sprite, spriteTexture } from './SpriteAtlas';
+import { ComboBurst } from './ComboBurst';
 
 interface Ghost {node:Phaser.GameObjects.Image;start:number;end:number;wave:number;reduced:boolean}
 interface Beam {node:Phaser.GameObjects.Image;glint:Phaser.GameObjects.Image;start:number;end:number;x:number;y:number;horizontal:boolean;alpha:number}
@@ -19,13 +20,15 @@ export class ClearEffects {
   private ghosts:Ghost[]=[];private beams:Beam[]=[];private particles:Particle[]=[];private pulses:Pulse[]=[];
   private sounds:Sound[]=Array.from({length:8},()=>({at:0,callback:null}));
   private callout:FeedbackLabel;private points:FeedbackLabel;
-  constructor(scene:Phaser.Scene,private layer:Phaser.GameObjects.Container,private budget:(count:number)=>number){
+  private combo:ComboBurst;
+  constructor(scene:Phaser.Scene,private layer:Phaser.GameObjects.Container,private budget:(count:number)=>number,private language:()=> 'en'|'ru'=()=> 'en'){
     const make=(key:string)=>{const node=sprite(scene,0,0,key).setVisible(false).setActive(false);layer.add(node);return node;};
     for(let i=0;i<128;i++)this.ghosts.push({node:make('block-1').setDisplaySize(49,49),start:0,end:-1,wave:0,reduced:false});
     for(let i=0;i<32;i++)this.beams.push({node:make('line-glow').setBlendMode('ADD'),glint:make('neon-glow').setBlendMode('ADD'),start:0,end:-1,x:0,y:0,horizontal:true,alpha:0});
     for(let i=0;i<32;i++)this.particles.push({node:make('particle').setBlendMode('ADD'),start:0,end:-1,x:0,y:0,vx:0,vy:0});
     for(let i=0;i<8;i++)this.pulses.push({node:make('neon-glow').setBlendMode('ADD'),start:0,end:-1,width:0,height:0,alpha:0});
     this.callout=new FeedbackLabel(scene);this.points=new FeedbackLabel(scene);
+    this.combo=new ComboBurst(scene);
   }
   clear(event:ClearEvent,reduced:boolean,onStart?:()=>void):void{
     this.running=true;
@@ -51,7 +54,7 @@ export class ClearEffects {
     }
     const sound=this.sounds[this.soundCursor++%this.sounds.length];sound.at=start;
     // Also start the score callout on the event's visual start, without a scene timer.
-    sound.callback=()=>{onStart?.();this.callout.show(`+${event.points}${event.combo>1?` · Combo ${Math.min(8,event.combo)}×`:''}`,240,GRID.y+170,Math.min(4,Math.max(event.rows.length+event.columns.length,event.combo>=4?3:event.combo>=2?2:1)),reduced);};
+    sound.callback=()=>{onStart?.();if(event.combo>=2){this.combo.show(event.combo,240,GRID.y+145,reduced,this.language(),this.budget(6));this.callout.show(`+${event.points}`,240,GRID.y+210,0,reduced);}else this.callout.show(`+${event.points}`,240,GRID.y+170,Math.min(4,event.rows.length+event.columns.length),reduced);};
     if(reduced){const callback=sound.callback;sound.callback=null;callback();}
   }
   private line(x:number,y:number,horizontal:boolean,start:number,color:number,multi:boolean):void{
@@ -94,14 +97,14 @@ export class ClearEffects {
       alive=true;
       const t=Math.max(0,(this.time-pulse.start)/(pulse.end-pulse.start));pulse.node.setDisplaySize(pulse.width*(1+.12*t),pulse.height*(1+.12*t)).setAlpha(this.time<pulse.start?0:pulse.alpha*(1-t));
     }
-    this.callout.update(delta);this.points.update(delta);
-    this.running=alive||this.callout.playing||this.points.playing;
+    this.callout.update(delta);this.points.update(delta);this.combo.update(delta);
+    this.running=alive||this.callout.playing||this.points.playing||this.combo.playing;
   }
   reset():void{
     this.running=false;
     for(const ghost of this.ghosts){ghost.end=-1;hide(ghost.node);}for(const beam of this.beams){beam.end=-1;hide(beam.node);hide(beam.glint);}
     for(const particle of this.particles){particle.end=-1;hide(particle.node);}for(const pulse of this.pulses){pulse.end=-1;hide(pulse.node);}
-    for(const sound of this.sounds)sound.callback=null;this.callout.reset();this.points.reset();
+    for(const sound of this.sounds)sound.callback=null;this.callout.reset();this.points.reset();this.combo.reset();
   }
-  get active():number{let count=this.callout.active+this.points.active;for(const node of this.layer.list)if(node.active&&(node as Phaser.GameObjects.Image).visible)count++;return count;}
+  get active():number{let count=this.callout.active+this.points.active+this.combo.active;for(const node of this.layer.list)if(node.active&&(node as Phaser.GameObjects.Image).visible)count++;return count;}
 }
