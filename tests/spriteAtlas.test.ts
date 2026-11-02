@@ -10,7 +10,7 @@ describe('shared textures and allocation-free preview',()=>{
     const frames:{key:string;x:number;y:number;w:number;h:number}[]=[],remove=vi.fn(),refresh=vi.fn();
     const atlas={context:{drawImage:vi.fn()},add:(key:string,_source:number,x:number,y:number,w:number,h:number)=>frames.push({key,x,y,w,h}),refresh};
     const scene={textures:{createCanvas:vi.fn(()=>atlas),get:()=>({getSourceImage:()=>({})}),remove}} as unknown as Phaser.Scene;
-    createSpriteAtlas(scene);expect(scene.textures.createCanvas).toHaveBeenCalledWith('neon-atlas',1024,1024);expect(frames).toHaveLength(13);expect(remove).toHaveBeenCalledTimes(13);expect(refresh).toHaveBeenCalledTimes(1);
+    createSpriteAtlas(scene);expect(scene.textures.createCanvas).toHaveBeenCalledWith('neon-atlas',1024,1024);expect(frames).toHaveLength(14);expect(remove).toHaveBeenCalledTimes(14);expect(refresh).toHaveBeenCalledTimes(1);
     for(const a of frames){expect(a.x+a.w).toBeLessThanOrEqual(1024);expect(a.y+a.h).toBeLessThanOrEqual(1024);for(const b of frames)if(a!==b)expect(a.x+a.w<=b.x||b.x+b.w<=a.x||a.y+a.h<=b.y||b.y+b.h<=a.y).toBe(true);}
   });
   it('uses the same GPU texture when a cell changes color',()=>{

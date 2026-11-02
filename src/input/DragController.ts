@@ -1,4 +1,5 @@
 import { DRAG } from '../config/controls';
+import { VIEW } from '../config/layout';
 import type { Piece, Shape } from '../core/types';
 import { clientToWorld, createGrip, createZoneGrip, trayPickupSlot, pieceHitDistance, poseAt, type CanvasRect, type DragPose, type Grip, type PieceTransform, type Point } from './dragGeometry';
 
@@ -13,7 +14,7 @@ export interface DragHost {
   end(column: number, row: number): void;
   cancel(): void;
 }
-interface ActiveDrag { id: number; grip: Grip; rect: CanvasRect; point: Point; started: number; progress: number }
+interface ActiveDrag { id: number; grip: Grip; rect: CanvasRect; point: Point; origin:Point; moved:boolean; started: number; progress: number }
 export class DragController {
   private active: ActiveDrag | null = null;
   get dragging(): boolean { return this.active !== null; }
@@ -52,7 +53,7 @@ export class DragController {
     if(!grip)return;
     event.preventDefault();
     try{this.canvas.setPointerCapture(event.pointerId);}catch{return;}
-    const active:ActiveDrag={id:event.pointerId,grip,rect,point,started:performance.now(),progress:this.host.reducedMotion()?1:0};
+    const active:ActiveDrag={id:event.pointerId,grip,rect,point,origin:point,moved:false,started:performance.now(),progress:this.host.reducedMotion()?1:0};
     this.active=active;
     const pose=poseAt(point,grip,active.progress);
     this.host.begin(slot,pose);this.host.move(pose);
@@ -70,6 +71,7 @@ export class DragController {
     event.preventDefault();
     const samples=event.getCoalescedEvents?.(),latest=samples?.length?samples[samples.length-1]:event;
     this.active.point=this.local(latest,this.active.rect);
+    this.active.moved||=this.travelled(this.active,this.active.point);
     // A pointer event may arrive after a delayed render; never keep its pickup pose a frame behind.
     this.active.progress=this.host.reducedMotion()?1:Math.min(1,Math.max(this.active.progress,(performance.now()-this.active.started)/DRAG.pickupDurationMs));
     // Pointer motion is applied immediately, even while the pickup animation is running.
@@ -80,12 +82,16 @@ export class DragController {
     if(Math.abs(next.width-previous.width)>.5||Math.abs(next.height-previous.height)>.5||Math.abs(next.left-previous.left)>.5||Math.abs(next.top-previous.top)>.5)this.cancel();
   };
   private rawMove=(event:Event):void=>this.move(event as PointerEvent);
+  private travelled(active:ActiveDrag,point:Point):boolean{
+    return Math.hypot((point.x-active.origin.x)*active.rect.width/VIEW.width,(point.y-active.origin.y)*active.rect.height/VIEW.height)>=DRAG.remoteCommitDistanceCss;
+  }
   private up = (event: PointerEvent): void => {
     if(!this.active||event.pointerId!==this.active.id) return;
     const active=this.active;this.active=null;
     // Use the same rendered pickup progress, not a new invisible animation state at release.
-    const pose=poseAt(this.local(event,active.rect),active.grip,active.progress);
+    const point=this.local(event,active.rect),pose=poseAt(point,active.grip,active.progress);
     try{
+      if(active.grip.startOffset&&!active.moved&&!this.travelled(active,point)){this.host.cancel();return;}
       if(this.host.enabled()){this.host.move(pose);this.host.end(pose.column,pose.row);}else this.host.cancel();
     }finally{if(this.canvas.hasPointerCapture(event.pointerId))this.canvas.releasePointerCapture(event.pointerId);}
   };

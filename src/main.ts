@@ -29,6 +29,9 @@ async function boot():Promise<void>{
   if(import.meta.env.DEV&&explicitMock&&query.get('qa')==='tray'){
     const {prepareTrayFixture}=await import('./debug/trayFixture');prepareTrayFixture(profile);
   }
+  if(import.meta.env.DEV&&explicitMock&&query.get('qa')==='combo'){
+    const {prepareComboFixture}=await import('./debug/trayFixture');prepareComboFixture(profile,Number(query.get('combo'))||8);
+  }
   // The engine download is the longest stage.
   loaderStage(0.45,0.92);
   // Start the engine only after Bridge initialization and restoration have completed.

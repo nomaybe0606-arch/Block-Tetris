@@ -24,7 +24,7 @@ class Benchmark extends Phaser.Scene{
     this.board.showPreview(this.sampleBoard,shape,x,y,true,false);
     const drag=this.board.acquireDrag({shapeId:shape.id,color:2},shape);drag.setPosition(240+140*Math.sin(elapsed/350),420+120*Math.cos(elapsed/480)).setScale(1);
     if(elapsed>=this.clears*600){const before=newGame(42);before.tray=[{shapeId:'line-4-v',color:2},{shapeId:'single',color:3},null];for(let row=0;row<4;row++){before.board[row].fill(1);before.board[row][7]=0;}
-      const result=placePiece(before,0,7,0)!;this.feedback.clear(captureClear(result,before.board,2),false);this.clears++;}
+      const result=placePiece(before,0,7,0)!;this.feedback.clear({...captureClear(result,before.board,2),combo:2+this.clears%7},false);this.clears++;}
     this.feedback.update(delta);this.neon.update(delta);this.cpu.push(performance.now()-started);
     if(elapsed>=12000){this.running=false;this.board.releaseDrag();this.board.clearPreview();button.disabled=false;
       const sorted=this.frames.slice(30).sort((a,b)=>a-b),cpu=this.cpu.slice(30).sort((a,b)=>a-b),q=(values:number[],p:number)=>values[Math.min(values.length-1,Math.floor(values.length*p))];

@@ -12,9 +12,9 @@ export class Feedback {
   private pointLabel:Phaser.GameObjects.Text|null=null;
   private flash:Phaser.GameObjects.Graphics|null=null;
   private lines:{beam:Phaser.GameObjects.Image;glint:Phaser.GameObjects.Image}[]=[];
-  constructor(private scene: Phaser.Scene,private neon?:NeonEffects,layer?:Phaser.GameObjects.Container) {
+  constructor(private scene: Phaser.Scene,private neon?:NeonEffects,layer?:Phaser.GameObjects.Container,language:()=> 'en'|'ru'=()=> 'en') {
     if(neon){
-      this.runtime=new ClearEffects(scene,layer??scene.add.container().setDepth(8),count=>neon.budget(count));
+      this.runtime=new ClearEffects(scene,layer??scene.add.container().setDepth(8),count=>neon.budget(count),language);
     }
   }
   clear(input: Placement|ClearEvent, reduced: boolean,onStart?:()=>void): void {

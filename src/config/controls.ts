@@ -6,4 +6,5 @@ export const DRAG = {
   touchClearanceCss: 22,
   touchHitSlopCss: 8,
   mouseHitSlopCss: 3,
+  remoteCommitDistanceCss: 3,
 };

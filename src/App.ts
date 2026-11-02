@@ -72,6 +72,7 @@ export class App implements SceneDelegate {
   canInteract():boolean{return (this.screen==='game'||this.screen==='tutorial')&&!this.modal&&!this.platform.paused&&!this.swap.busy&&!this.swap.savePending&&!this.state.over;}
   onPick():void{this.audio.play('pick');}
   audioStats():{audioBuffers:number;audioVoices:number}{return this.audio.stats;}
+  language():'en'|'ru'{return this.profile.settings.language;}
   onPlace(slot:number,x:number,y:number):Placement|null{
     if(!this.canInteract())return null;
     const result=placePiece(this.state,slot,x,y);if(!result)return null;
