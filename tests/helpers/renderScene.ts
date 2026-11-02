@@ -4,6 +4,7 @@ import type Phaser from 'phaser';
 export class RenderNode {
   x=0;y=0;scaleX=1;scaleY=1;alpha=1;visible=true;active=true;destroyed=false;tintTopLeft=0;text='';
   list:RenderNode[]=[];parent:RenderNode|null=null;textUpdates=0;
+  blendMode='NORMAL';
   constructor(readonly kind:string,public key=''){}
   setPosition(x:number,y:number){this.x=x;this.y=y;return this;}
   setY(y:number){this.y=y;return this;}
@@ -16,7 +17,7 @@ export class RenderNode {
   setFrame(){return this;}
   setTint(color:number){this.tintTopLeft=color;return this;}
   setText(text:string){this.text=text;this.textUpdates++;return this;}
-  setDepth(){return this;}setBlendMode(){return this;}setOrigin(){return this;}setAngle(){return this;}
+  setDepth(){return this;}setBlendMode(mode:string){this.blendMode=mode;return this;}setOrigin(){return this;}setAngle(){return this;}
   fillStyle(){return this;}lineStyle(){return this;}fillRoundedRect(){return this;}strokeRoundedRect(){return this;}
   clear(){return this;}generateTexture(){return this;}
   add(value:RenderNode|RenderNode[]){for(const node of Array.isArray(value)?value:[value]){node.parent=this;this.list.push(node);}return this;}

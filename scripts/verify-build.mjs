@@ -60,6 +60,7 @@ assert(!scripts.some(path => path.includes('DevRewarded')), 'DEV rewarded chunk 
 assert(!appCode.includes('happy-dom'), 'DOM test environment leaked into production');
 assert(!/grid-pulse-perf|GRID_PULSE_DEV_PERF_ONLY|DEV PERF/.test(appCode), 'DEV performance diagnostics leaked into production');
 assert(!scripts.some(path => path.includes('PerfDiagnostics')), 'DEV performance chunk leaked into production');
+assert(!appCode.includes('GRID_PULSE_DEV_TRAY_ONLY')&&!scripts.some(path => path.includes('trayFixture')), 'DEV tray fixture leaked into production');
 assert(appCode.includes(`${base}assets/audio/ambient.`), 'Music URL does not use BASE_URL');
 assert(appCode.includes(`${base}assets/audio/`), 'Effect URLs do not use BASE_URL');
 // Validate emitted module references relative to the chunk that imports them.

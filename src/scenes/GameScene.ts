@@ -102,6 +102,7 @@ export class GameScene extends Phaser.Scene {
     const valid=canPlace(this.delegate.state.board,getShape(piece.shapeId),x,y)&&(!this.delegate.isTutorial()||(x===5&&y===6));
     if(!valid)return this.cancelDrag();
     const previous=this.delegate.state.board;
+    const from=this.drag?{x:this.drag.x,y:this.drag.y,scale:this.drag.scaleX,column:x,row:y}:undefined;
     this.boardView.releaseDrag();this.drag=null;this.slot=-1;this.boardView.clearPreview();
     this.neon.end();
     const result=this.delegate.onPlace(slot,x,y);
@@ -109,7 +110,9 @@ export class GameScene extends Phaser.Scene {
     // Commit/render the already-cleared logical board exactly once. Ghosts are a separate layer.
     this.boardView.render(result.state.board);this.boardView.showTutorial(false);
     this.boardView.renderTray(result.state,this.delegate.reducedMotion(),result.state.tray.every(Boolean),this.delegate.showSwapControl());
-    this.boardView.landCells(result.placed,this.decorReduced());this.neon.placement(result,piece.color);
+    if(from)this.boardView.landCells(result.placed,this.decorReduced(),from,getShape(piece.shapeId));
+    else this.boardView.landCells(result.placed,this.decorReduced());
+    this.neon.placement(result,piece.color);
     if(result.cleared.length) {
       const start=this.diagnostics?performance.now():0,event=captureClear(result,previous,piece.color);
       this.feedback.clear(event,this.decorReduced(),()=>this.delegate.onClearFeedback(event));

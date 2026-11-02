@@ -11,6 +11,7 @@ import { SwapController } from './ui/SwapController';
 import { strings } from './localization/strings';
 import { MONETIZATION } from './config/monetization';
 import type { ClearEvent } from './rendering/ClearEvent';
+import { bufferRatio, ENGINE_INPUT, RENDER } from './rendering/renderConfig';
 
 const seed = () => crypto.getRandomValues(new Uint32Array(1))[0];
 export class App implements SceneDelegate {
@@ -29,6 +30,7 @@ export class App implements SceneDelegate {
   private recordAnnounced=false;
   private swap:SwapController;
   private closing=false;
+  private displayScale=1;private renderRatio=1;private viewportKey='';
   constructor(private platform:PlatformPort,private profile:Profile) {
     this.state=profile.game??newGame(seed(),profile.best);
     this.ui=new Interface(action=>this.action(action),(key,value)=>this.setting(key,value));
@@ -40,13 +42,15 @@ export class App implements SceneDelegate {
       animate:async offer=>{this.modal=null;this.render();this.audio.play('combo');await this.scene.animateSwap(offer);this.scene.refresh();},
     });
     this.platform.onChange=()=>this.platformChanged();
+    this.resize();this.renderRatio=bufferRatio(this.displayScale,window.devicePixelRatio||1);
     this.game=new Phaser.Game({
       type:Phaser.AUTO,parent:'game',width:VIEW.width*this.pixelRatio(),height:VIEW.height*this.pixelRatio(),transparent:true,
-      render:{antialias:true,pixelArt:false,roundPixels:false},
-      input:{mouse:{preventDefaultWheel:false},touch:{capture:true}},
+      render:RENDER,
+      input:ENGINE_INPUT,
       audio:{noAudio:true},fps:{target:60},scene:[new GameScene(this)],
       scale:{mode:Phaser.Scale.NONE,width:VIEW.width*this.pixelRatio(),height:VIEW.height*this.pixelRatio()},
     });
+    this.game.canvas.tabIndex=0;
     window.addEventListener('resize',this.resize);window.visualViewport?.addEventListener('resize',this.resize);
     window.addEventListener('pagehide',()=>this.save());
     window.addEventListener('blur',()=>this.scene?.cancel());
@@ -60,7 +64,7 @@ export class App implements SceneDelegate {
   reducedMotion():boolean{return this.profile.settings.reducedMotion;}
   intenseEffects():boolean{return this.profile.settings.intenseEffects;}
   showSwapControl():boolean{return !this.training&&this.platform.rewardedSupported&&this.state.moves>=MONETIZATION.swapUnlockAfterPlacedPieces;}
-  pixelRatio():number{return Math.min(window.devicePixelRatio||1,2);}
+  pixelRatio():number{return this.renderRatio;}
   isTutorial():boolean{return this.training;}
   canInteract():boolean{return (this.screen==='game'||this.screen==='tutorial')&&!this.modal&&!this.platform.paused&&!this.swap.busy&&!this.swap.savePending&&!this.state.over;}
   onPick():void{this.audio.play('pick');}
@@ -87,8 +91,10 @@ export class App implements SceneDelegate {
   private resize=():void=>{
     const viewport=document.querySelector<HTMLElement>('#viewport')!,frame=document.querySelector<HTMLElement>('#frame')!;
     const style=getComputedStyle(viewport),left=parseFloat(style.paddingLeft),right=parseFloat(style.paddingRight),top=parseFloat(style.paddingTop),bottom=parseFloat(style.paddingBottom),w=viewport.clientWidth-left-right,h=viewport.clientHeight-top-bottom;
+    const key=`${w}:${h}:${left}:${right}:${top}:${bottom}`;if(key===this.viewportKey)return;this.viewportKey=key;
+    this.displayScale=Math.min(w/VIEW.width,h/VIEW.height);
     frame.style.left=`${(viewport.clientWidth+left-right)/2}px`;frame.style.top=`${(viewport.clientHeight+top-bottom)/2}px`;
-    frame.style.transform=`translate(-50%, -50%) scale(${Math.min(w/VIEW.width,h/VIEW.height)})`;
+    frame.style.transform=`translate(-50%, -50%) scale(${this.displayScale})`;
     this.scene?.cancel();
   };
   private platformChanged():void{

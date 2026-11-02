@@ -13,6 +13,9 @@ async function boot():Promise<void>{
   if(platform instanceof PlatformService)await platform.initialize();
   const defaults=defaultProfile(platform.language,matchMedia('(prefers-reduced-motion: reduce)').matches);
   const profile=restoreProfile(await platform.load(),defaults);
+  if(import.meta.env.DEV&&explicitMock&&query.get('qa')==='tray'){
+    const {prepareTrayFixture}=await import('./debug/trayFixture');prepareTrayFixture(profile);
+  }
   // Start the engine only after Bridge initialization and restoration have completed.
   const {App}=await import('./App');new App(platform,profile);
 }

@@ -19,11 +19,12 @@ export class DragController {
   constructor(private canvas: HTMLCanvasElement, private host: DragHost) {
     canvas.addEventListener('pointerdown',this.down);
     canvas.addEventListener('pointermove',this.move);
+    if('onpointerrawupdate' in canvas)canvas.addEventListener('pointerrawupdate',this.rawMove);
     canvas.addEventListener('pointerup',this.up);
     canvas.addEventListener('pointercancel',this.cancel);
     canvas.addEventListener('lostpointercapture',this.cancel);
     window.addEventListener('blur',this.cancel);
-    window.addEventListener('resize',this.cancel);
+    window.addEventListener('resize',this.resize);
     document.addEventListener('visibilitychange',this.onVisibility);
   }
   private local(event: PointerEvent, rect: CanvasRect) { return clientToWorld({x:event.clientX,y:event.clientY},rect); }
@@ -59,10 +60,19 @@ export class DragController {
   private move = (event: PointerEvent): void => {
     if(!this.active||event.pointerId!==this.active.id) return;
     if(!this.host.enabled()) {this.cancel();return;}
-    event.preventDefault();this.active.point=this.local(event,this.active.rect);
+    event.preventDefault();
+    const samples=event.getCoalescedEvents?.(),latest=samples?.length?samples[samples.length-1]:event;
+    this.active.point=this.local(latest,this.active.rect);
+    // A pointer event may arrive after a delayed render; never keep its pickup pose a frame behind.
+    this.active.progress=this.host.reducedMotion()?1:Math.min(1,Math.max(this.active.progress,(performance.now()-this.active.started)/DRAG.pickupDurationMs));
     // Pointer motion is applied immediately, even while the pickup animation is running.
     this.host.move(poseAt(this.active.point,this.active.grip,this.active.progress));
   };
+  private resize=():void=>{
+    if(!this.active)return;const next=this.canvas.getBoundingClientRect(),previous=this.active.rect;
+    if(Math.abs(next.width-previous.width)>.5||Math.abs(next.height-previous.height)>.5||Math.abs(next.left-previous.left)>.5||Math.abs(next.top-previous.top)>.5)this.cancel();
+  };
+  private rawMove=(event:Event):void=>this.move(event as PointerEvent);
   private up = (event: PointerEvent): void => {
     if(!this.active||event.pointerId!==this.active.id) return;
     const active=this.active;this.active=null;
@@ -81,7 +91,8 @@ export class DragController {
   private onVisibility = (): void => { if(document.hidden) this.cancel(); };
   destroy(): void {
     this.cancel(); this.canvas.removeEventListener('pointerdown',this.down); this.canvas.removeEventListener('pointermove',this.move);
+    this.canvas.removeEventListener('pointerrawupdate',this.rawMove);
     this.canvas.removeEventListener('pointerup',this.up);this.canvas.removeEventListener('pointercancel',this.cancel);this.canvas.removeEventListener('lostpointercapture',this.cancel);
-    window.removeEventListener('blur',this.cancel);window.removeEventListener('resize',this.cancel);document.removeEventListener('visibilitychange',this.onVisibility);
+    window.removeEventListener('blur',this.cancel);window.removeEventListener('resize',this.resize);document.removeEventListener('visibilitychange',this.onVisibility);
   }
 }

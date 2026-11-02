@@ -5,7 +5,8 @@ import { FEEDBACK } from '../config/feedback';
 import { canPlace, cloneBoard, findLines, hasMove } from '../core/board';
 import { getShape } from '../core/shapes';
 import type { Board, Cell, GameState, Piece, Shape } from '../core/types';
-import type { PieceTransform } from '../input/dragGeometry';
+import type { DragPose, PieceTransform } from '../input/dragGeometry';
+import { trayTransformFor } from './trayLayout';
 
 export class BoardRenderer {
   readonly root: Phaser.GameObjects.Container;
@@ -22,7 +23,8 @@ export class BoardRenderer {
   private slotAlphas=[0,0,0];
   private dragNode:Phaser.GameObjects.Container;
   private dragCells:Phaser.GameObjects.Image[]=[];
-  private home={y:TRAY.y,scale:TRAY.scale};
+  private reserveSwapSpace=false;
+  private homes:PieceTransform[]=TRAY.centers.map(x=>({x,y:TRAY.y,scale:TRAY.scale}));
   private previewKey='';
   private previewOld:Phaser.GameObjects.Graphics;
   private previewHalo:Phaser.GameObjects.Image;
@@ -38,16 +40,18 @@ export class BoardRenderer {
     const surround=scene.add.image(240,425,'board-frame').setDisplaySize(480,850);
     const ambient=scene.add.image(240,438,'neon-glow').setTint(0x6b6dff).setDisplaySize(550,590).setAlpha(.17).setBlendMode('ADD');
     const glass=scene.add.image(240,438,'board-glass').setDisplaySize(432,432);
+    const reflectionLayer=scene.add.container();
     this.clearLayer=scene.add.container();this.blocks = scene.add.container(); this.tray = scene.add.container();
     this.tutorial = scene.add.graphics(); this.preview = scene.add.graphics();this.previewOld=scene.add.graphics();
     this.previewHalo=scene.add.image(0,0,'neon-glow').setBlendMode('ADD').setAlpha(0);
-    this.root.add([ambient,surround,glass,this.clearLayer,this.blocks,this.tutorial,this.previewHalo,this.previewOld,this.preview,this.tray]);
+    this.root.add([ambient,surround,glass,this.clearLayer,reflectionLayer,this.blocks,this.tutorial,this.previewHalo,this.previewOld,this.preview,this.tray]);
     // Fixed board and drag objects: pointer movement and ordinary moves allocate no images.
     for(let index=0;index<64;index++){
       const x=index%8,y=Math.floor(index/8);
       if(index%4===0){
         const glow=scene.add.image(GRID.x+x*52+26,GRID.y+y*52+26,'neon-glow').setDisplaySize(125,125).setAlpha(.12).setBlendMode('ADD').setVisible(false).setActive(false);
-        this.blocks.add(glow);this.reflections.set(index,glow);
+        // Keep all ADD reflections together: interleaving them with cells flushed WebGL every four cells.
+        reflectionLayer.add(glow);this.reflections.set(index,glow);
       }
       const block=scene.add.image(GRID.x+x*52+26,GRID.y+y*52+26,'block-1').setDisplaySize(49,49).setVisible(false).setActive(false);
       this.blocks.add(block);this.cells.set(`${x}:${y}`,block);
@@ -61,7 +65,7 @@ export class BoardRenderer {
       this.colors[index]=color;
       const block=this.cells.get(`${x}:${y}`)!;
       this.scene.tweens.killTweensOf(block);
-      block.setVisible(color!==0).setActive(color!==0).setAlpha(1).setDisplaySize(49,49);
+      block.setPosition(GRID.x+x*52+26,GRID.y+y*52+26).setVisible(color!==0).setActive(color!==0).setAlpha(1).setDisplaySize(49,49);
       if(color)block.setTexture(`block-${color}`);
       const reflection=this.reflections.get(index);
       if(reflection)this.scene.tweens.killTweensOf(reflection);
@@ -69,13 +73,19 @@ export class BoardRenderer {
       if(color)reflection?.setTint(parseInt(COLORS[color-1].slice(1),16));
     }
   }
-  landCells(cells:Cell[],reduced:boolean):void{
+  landCells(cells:Cell[],reduced:boolean,from?:DragPose,shape?:Shape):void{
     if(reduced)return;
     for(const [x,y] of cells){
       const block=this.cells.get(`${x}:${y}`)!;this.scene.tweens.killTweensOf(block);
       if(!block.visible)continue;
-      block.setDisplaySize(52,46);
-      this.scene.tweens.add({targets:block,scaleX:49/128,scaleY:49/128,duration:ANIMATION.landMs,ease:'Back.Out'});
+      const targetX=GRID.x+x*52+26,targetY=GRID.y+y*52+26;
+      if(from&&shape){
+        block.setPosition(from.x+(x-from.column-(shape.width-1)/2)*52*from.scale,from.y+(y-from.row-(shape.height-1)/2)*52*from.scale).setDisplaySize(49*from.scale,49*from.scale);
+        this.scene.tweens.add({targets:block,x:targetX,y:targetY,scaleX:49/128,scaleY:49/128,duration:90,ease:'Cubic.Out'});
+      }else{
+        block.setDisplaySize(52,46);
+        this.scene.tweens.add({targets:block,scaleX:49/128,scaleY:49/128,duration:ANIMATION.landMs,ease:'Back.Out'});
+      }
     }
   }
   clearCells(cells:Cell[],reduced:boolean):void{
@@ -89,8 +99,7 @@ export class BoardRenderer {
     });
   }
   renderTray(state: GameState, reduced: boolean, animate = false, reserveSwapSpace=false): void {
-    const home=reserveSwapSpace?{y:722,scale:.52}:{y:TRAY.y,scale:TRAY.scale};
-    const layoutChanged=home.y!==this.home.y;this.home=home;
+    const layoutChanged=reserveSwapSpace!==this.reserveSwapSpace;this.reserveSwapSpace=reserveSwapSpace;
     state.tray.forEach((piece, index) => {
       const key=piece?`${piece.shapeId}:${piece.color}`:'',changed=key!==this.slotKeys[index];
       let container=this.slots[index];
@@ -98,12 +107,13 @@ export class BoardRenderer {
       this.slotKeys[index]=key;
       if(!piece){this.slots[index]=null;return;}
       const shape=getShape(piece.shapeId),alpha=hasMove(state.board,shape)?1:.3;
+      const home=trayTransformFor(shape,index,reserveSwapSpace);this.homes[index]=home;
       if(!container){container=this.piece(piece,shape);this.tray.add(container);this.slots[index]=container;}
       if(changed||layoutChanged||animate){
         this.scene.tweens.killTweensOf(container);container.setPosition(TRAY.centers[index],home.y).setScale(home.scale).setVisible(true).setAlpha(alpha);
         if(animate&&!reduced){
           container.setAlpha(0).setScale(home.scale*.78).setY(home.y+8);
-          this.scene.tweens.add({targets:container,y:home.y,scale:home.scale,alpha,duration:ANIMATION.trayMs,delay:index*ANIMATION.trayStaggerMs,ease:'Back.Out'});
+          this.scene.tweens.add({targets:container,y:home.y,scale:home.scale,alpha,duration:ANIMATION.trayMs,delay:index*ANIMATION.trayStaggerMs,ease:'Cubic.Out'});
         }
       }else{
         // Preserve the actual transform during appearance; hit-testing reads it directly.
@@ -134,7 +144,8 @@ export class BoardRenderer {
     const piece=this.slots[index];
     return piece?.visible&&piece.scaleX>0?{x:piece.x,y:piece.y,scale:piece.scaleX}:null;
   }
-  trayHome(index:number):PieceTransform{return {x:TRAY.centers[index],...this.home};}
+  trayHome(index:number):PieceTransform{return this.homes[index];}
+  trayTarget(shape:Shape,index:number):PieceTransform{return trayTransformFor(shape,index,this.reserveSwapSpace);}
   slotVisible(index: number, visible: boolean): void { this.slots[index]?.setVisible(visible); }
   clearPreview(): void {
     this.previewKey='';this.scene.tweens.killTweensOf(this.previewHalo);this.previewHalo.setAlpha(0);

@@ -6,6 +6,7 @@ import { DRAG } from '../src/config/controls';
 import { createGrip, poseAt, type DragPose } from '../src/input/dragGeometry';
 
 class FakeCanvas extends EventTarget {
+  onpointerrawupdate=null;
   captured=new Set<number>();
   rect={left:100,top:50,width:240,height:425};
   width=480; height=850;
@@ -101,8 +102,24 @@ describe('hit testing, capture, and cancellation',()=>{
     expect(host.cancel).toHaveBeenCalledTimes(1);expect(host.end).not.toHaveBeenCalled();expect(canvas.captured.size).toBe(0);expect(host.move).toHaveBeenCalledTimes(1);
   });
   it.each(['blur','resize'])('%s cancels the gesture and allows immediate pickup again',type=>{
-    const {canvas,host}=setup();canvas.pointer('pointerdown',102,736);window.dispatchEvent(new Event(type));canvas.pointer('pointerdown',102,736);
+    const {canvas,host}=setup();canvas.pointer('pointerdown',102,736);if(type==='resize')canvas.rect={...canvas.rect,width:300};window.dispatchEvent(new Event(type));canvas.pointer('pointerdown',102,736);
     expect(host.cancel).toHaveBeenCalledTimes(1);expect(host.begin).toHaveBeenCalledTimes(2);
+  });
+  it('keeps a gesture through duplicate resize notifications with unchanged bounds',()=>{
+    const {canvas,host,controller}=setup();canvas.pointer('pointerdown',102,736,{pointerType:'touch'});
+    for(let i=0;i<10;i++)window.dispatchEvent(new Event('resize'));
+    expect(controller.dragging).toBe(true);expect(host.cancel).not.toHaveBeenCalled();canvas.pointer('pointerup',370,568);expect(host.end).toHaveBeenCalledTimes(1);
+  });
+  it('accepts raw pointer updates when available and removes that listener on destroy',()=>{
+    const {canvas,preview,controller,host}=setup();canvas.pointer('pointerdown',102,736);frame(100);
+    canvas.pointer('pointerrawupdate',310,510);expect(preview().x).toBe(310);expect(preview().y).toBe(510);
+    controller.destroy();const count=host.move.mock.calls.length;canvas.pointer('pointerrawupdate',400,600);expect(host.move).toHaveBeenCalledTimes(count);
+  });
+  it('uses the newest coalesced position directly and advances pickup after a missed render',()=>{
+    const {canvas,preview,host}=setup();canvas.pointer('pointerdown',102,736,{pointerType:'touch'});frame(20);now=100;
+    canvas.pointer('pointermove',150,650,{getCoalescedEvents:()=>[{clientX:canvas.rect.left+200*canvas.rect.width/480,clientY:canvas.rect.top+600*canvas.rect.height/850},{clientX:canvas.rect.left+300*canvas.rect.width/480,clientY:canvas.rect.top+500*canvas.rect.height/850}]});
+    expect(preview().x).toBe(300);expect(preview().scale).toBe(1);const shown=preview();
+    canvas.pointer('pointerup',300,500);expect(preview()).toEqual(shown);expect(host.end).toHaveBeenCalledExactlyOnceWith(shown.column,shown.row);
   });
   it('ignores a second pointer, including its cancel and lost-capture events',()=>{
     const {canvas,host}=setup();canvas.pointer('pointerdown',102,736);canvas.pointer('pointerdown',102,736,{pointerId:2});canvas.pointer('pointercancel',0,0,{pointerId:2});canvas.pointer('lostpointercapture',0,0,{pointerId:2});canvas.pointer('pointerup',370,568,{pointerId:2});
