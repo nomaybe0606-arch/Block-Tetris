@@ -22,6 +22,8 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer;border:0;-w
 @keyframes float{0%,100%{translate:0 0}50%{translate:0 -9px}}@keyframes pulse{50%{opacity:.4}}@keyframes loading{to{translate:70px 0}}@keyframes modal-in{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}.reduced-motion *{animation:none!important;transition:none!important}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}@media(max-width:500px){#frame{border-radius:0;box-shadow:none}}
 
+/* Keep canvas updates in their own compositing/paint boundary, apart from DOM score updates. */
+#game{contain:strict;isolation:isolate;transform:translateZ(0)}
 /* Grid Tetris 2.0 — Neon Glass. Raster glows are cached by Phaser; no persistent per-cell blur. */
 #frame{background:radial-gradient(ellipse at 8% 8%,#6d409d35,transparent 50%),radial-gradient(ellipse at 92% 78%,#087b8940,transparent 52%),linear-gradient(155deg,#151735,#101a34 65%,#172b42)}
 .icon-button{background:linear-gradient(145deg,#8c91db1c,#24345142);border-color:#a8b8ff36;box-shadow:inset 0 1px 0 #dfeaff15,0 5px 16px #070c2429}

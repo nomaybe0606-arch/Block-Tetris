@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { COLORS } from '../config/layout';
 import { createFeedbackAtlas } from './FeedbackAtlas';
+import { createSpriteAtlas } from './SpriteAtlas';
 
 export function createTextures(scene: Phaser.Scene): void {
   createFeedbackAtlas(scene);
@@ -44,4 +45,8 @@ export function createTextures(scene: Phaser.Scene): void {
   board.refresh();
   const dot = scene.add.graphics().fillStyle(0xffffff).fillCircle(4, 4, 4);
   dot.generateTexture('particle', 8, 8); dot.destroy();
+  const preview=scene.textures.createCanvas('preview-cell',128,128)!,p=preview.context;
+  p.fillStyle='#ffffff';p.globalAlpha=.34;p.beginPath();p.roundRect(2,2,124,124,18);p.fill();p.globalAlpha=.8;p.lineWidth=5;p.strokeStyle='#ffffff';p.stroke();preview.refresh();
+  const fill=scene.textures.createCanvas('preview-fill',128,128)!,f=fill.context;f.fillStyle='#ffffff';f.beginPath();f.roundRect(2,2,124,124,18);f.fill();fill.refresh();
+  createSpriteAtlas(scene);
 }

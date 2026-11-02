@@ -13,7 +13,8 @@ export interface UIModel {
   supportUrl?: string;
   swap:SwapUI;
 }
-const number = (n: number) => n.toLocaleString('en-US').replaceAll(',', ' ');
+const formatter=new Intl.NumberFormat('en-US');
+const number = (n: number) => formatter.format(n).replaceAll(',', ' ');
 const action = (id: string, label: string, cls = 'secondary', glyph = '') => `<button type="button" class="${cls}" data-action="${id}">${glyph ? icon(glyph) : ''}<span>${label}</span>${cls.includes('primary') ? icon('arrow') : ''}</button>`;
 const iconButton = (id: string, label: string, glyph: string) => `<button type="button" class="icon-button" data-action="${id}" aria-label="${label}" title="${label}">${icon(glyph)}</button>`;
 
@@ -183,11 +184,11 @@ export class Interface {
     const sameNode=this.scoreNode===element;this.scoreNode=element;this.scoreTarget=target;
     if(!animate||!sameNode){this.scoreValue=target;element.textContent=number(target);return;}
     const start=animate?this.scoreValue:target,startTime=performance.now();
-    element.textContent=number(start);
+      if(element.textContent!==number(start))element.textContent=number(start);
     this.animate(element,[{transform:'scale(1)'},{transform:'scale(1.035)'},{transform:'scale(1)'}],{duration:ANIMATION.scoreMs,easing:'ease-out'});
     const step=(time:number)=>{
       const progress=Math.min(1,Math.max(0,(time-startTime)/ANIMATION.scoreMs)),value=Math.round(start+(target-start)*(1-(1-progress)**3));
-      element.textContent=number(value);this.scoreValue=value;
+        if(value!==this.scoreValue){element.textContent=number(value);this.scoreValue=value;}
       if(progress<1)this.scoreFrame=requestAnimationFrame(step);
       else this.scoreFrame=0;
     };this.scoreFrame=requestAnimationFrame(step);

@@ -2,18 +2,19 @@ import type Phaser from 'phaser';
 import { COLORS, GRID, TRAY } from '../config/layout';
 import { ANIMATION } from '../config/animation';
 import { FEEDBACK } from '../config/feedback';
-import { canPlace, cloneBoard, findLines, hasMove } from '../core/board';
+import { canPlace, hasMove } from '../core/board';
 import { getShape } from '../core/shapes';
 import type { Board, Cell, GameState, Piece, Shape } from '../core/types';
 import type { DragPose, PieceTransform } from '../input/dragGeometry';
 import { trayTransformFor } from './trayLayout';
+import { sprite, spriteTexture } from './SpriteAtlas';
 
 export class BoardRenderer {
   readonly root: Phaser.GameObjects.Container;
   readonly clearLayer:Phaser.GameObjects.Container;
   private blocks: Phaser.GameObjects.Container;
   private tray: Phaser.GameObjects.Container;
-  private preview: Phaser.GameObjects.Graphics;
+  private preview: Phaser.GameObjects.Container;
   private tutorial: Phaser.GameObjects.Graphics;
   private slots: (Phaser.GameObjects.Container | null)[] = [];
   private cells=new Map<string,Phaser.GameObjects.Image>();
@@ -26,7 +27,9 @@ export class BoardRenderer {
   private reserveSwapSpace=false;
   private homes:PieceTransform[]=TRAY.centers.map(x=>({x,y:TRAY.y,scale:TRAY.scale}));
   private previewKey='';
-  private previewOld:Phaser.GameObjects.Graphics;
+  private previewOld:Phaser.GameObjects.Container;
+  private previewCells:Phaser.GameObjects.Image[]=[];private previewOldCells:Phaser.GameObjects.Image[]=[];
+  private lineCells:Phaser.GameObjects.Image[]=[];private predicted=new Uint8Array(64);
   private previewHalo:Phaser.GameObjects.Image;
   constructor(private scene: Phaser.Scene) {
     this.root = scene.add.container();
@@ -37,27 +40,30 @@ export class BoardRenderer {
     // A quiet tray with three generous hit areas, rather than button-shaped pieces.
     TRAY.centers.forEach(x => { g.fillStyle(0x1e2546, 0.46).fillRoundedRect(x-64, 684, 128, 110, 18); });
     g.generateTexture('board-frame',480,850);g.destroy();
-    const surround=scene.add.image(240,425,'board-frame').setDisplaySize(480,850);
-    const ambient=scene.add.image(240,438,'neon-glow').setTint(0x6b6dff).setDisplaySize(550,590).setAlpha(.17).setBlendMode('ADD');
-    const glass=scene.add.image(240,438,'board-glass').setDisplaySize(432,432);
+    const surround=sprite(scene,240,425,'board-frame').setDisplaySize(480,850);
+    const ambient=sprite(scene,240,438,'neon-glow').setTint(0x6b6dff).setDisplaySize(550,590).setAlpha(.17).setBlendMode('ADD');
+    const glass=sprite(scene,240,438,'board-glass').setDisplaySize(432,432);
     const reflectionLayer=scene.add.container();
     this.clearLayer=scene.add.container();this.blocks = scene.add.container(); this.tray = scene.add.container();
-    this.tutorial = scene.add.graphics(); this.preview = scene.add.graphics();this.previewOld=scene.add.graphics();
-    this.previewHalo=scene.add.image(0,0,'neon-glow').setBlendMode('ADD').setAlpha(0);
-    this.root.add([ambient,surround,glass,this.clearLayer,reflectionLayer,this.blocks,this.tutorial,this.previewHalo,this.previewOld,this.preview,this.tray]);
+    this.tutorial = scene.add.graphics(); this.preview = scene.add.container();this.previewOld=scene.add.container();
+    for(let i=0;i<9;i++){const a=sprite(scene,0,0,'preview-cell').setDisplaySize(48,48).setVisible(false),b=sprite(scene,0,0,'preview-cell').setDisplaySize(48,48).setVisible(false);this.preview.add(a);this.previewOld.add(b);this.previewCells.push(a);this.previewOldCells.push(b);}
+    const previewLines=scene.add.container();
+    for(let i=0;i<64;i++){const cell=sprite(scene,GRID.x+i%8*52+26,GRID.y+Math.floor(i/8)*52+26,'preview-fill').setDisplaySize(48,48).setTint(0xb7fff1).setAlpha(.18).setVisible(false);previewLines.add(cell);this.lineCells.push(cell);}
+    this.previewHalo=sprite(scene,0,0,'neon-glow').setBlendMode('ADD').setAlpha(0);
+    this.root.add([ambient,surround,glass,this.clearLayer,reflectionLayer,this.blocks,this.tutorial,this.previewHalo,previewLines,this.previewOld,this.preview,this.tray]);
     // Fixed board and drag objects: pointer movement and ordinary moves allocate no images.
     for(let index=0;index<64;index++){
       const x=index%8,y=Math.floor(index/8);
       if(index%4===0){
-        const glow=scene.add.image(GRID.x+x*52+26,GRID.y+y*52+26,'neon-glow').setDisplaySize(125,125).setAlpha(.12).setBlendMode('ADD').setVisible(false).setActive(false);
+        const glow=sprite(scene,GRID.x+x*52+26,GRID.y+y*52+26,'neon-glow').setDisplaySize(125,125).setAlpha(.12).setBlendMode('ADD').setVisible(false).setActive(false);
         // Keep all ADD reflections together: interleaving them with cells flushed WebGL every four cells.
         reflectionLayer.add(glow);this.reflections.set(index,glow);
       }
-      const block=scene.add.image(GRID.x+x*52+26,GRID.y+y*52+26,'block-1').setDisplaySize(49,49).setVisible(false).setActive(false);
+      const block=sprite(scene,GRID.x+x*52+26,GRID.y+y*52+26,'block-1').setDisplaySize(49,49).setVisible(false).setActive(false);
       this.blocks.add(block);this.cells.set(`${x}:${y}`,block);
     }
     this.dragNode=scene.add.container().setDepth(30).setVisible(false).setActive(false);
-    for(let i=0;i<9;i++){const block=scene.add.image(0,0,'block-1').setDisplaySize(49,49).setVisible(false);this.dragCells.push(block);this.dragNode.add(block);}
+    for(let i=0;i<9;i++){const block=sprite(scene,0,0,'block-1').setDisplaySize(49,49).setVisible(false);this.dragCells.push(block);this.dragNode.add(block);}
   }
   render(board: Board): void {
     for(let y=0;y<8;y++)for(let x=0;x<8;x++){
@@ -66,7 +72,7 @@ export class BoardRenderer {
       const block=this.cells.get(`${x}:${y}`)!;
       this.scene.tweens.killTweensOf(block);
       block.setPosition(GRID.x+x*52+26,GRID.y+y*52+26).setVisible(color!==0).setActive(color!==0).setAlpha(1).setDisplaySize(49,49);
-      if(color)block.setTexture(`block-${color}`);
+      if(color)spriteTexture(block,`block-${color}`);
       const reflection=this.reflections.get(index);
       if(reflection)this.scene.tweens.killTweensOf(reflection);
       reflection?.setVisible(color!==0).setActive(color!==0).setAlpha(.12);
@@ -130,14 +136,14 @@ export class BoardRenderer {
     this.scene.tweens.killTweensOf(this.dragNode);
     this.dragCells.forEach((block,index)=>{
       const cell=shape.cells[index];block.setVisible(!!cell);
-      if(cell)block.setTexture(`block-${piece.color}`).setPosition((cell[0]-(shape.width-1)/2)*52,(cell[1]-(shape.height-1)/2)*52);
+      if(cell){spriteTexture(block,`block-${piece.color}`);block.setPosition((cell[0]-(shape.width-1)/2)*52,(cell[1]-(shape.height-1)/2)*52);}
     });
     return this.dragNode.setVisible(true).setActive(true);
   }
   releaseDrag():void{this.scene.tweens.killTweensOf(this.dragNode);this.dragNode.setVisible(false).setActive(false);}
   piece(piece: Piece, shape: Shape): Phaser.GameObjects.Container {
     const container = this.scene.add.container();
-    for (const [x,y] of shape.cells) container.add(this.scene.add.image((x-(shape.width-1)/2)*GRID.cell, (y-(shape.height-1)/2)*GRID.cell, `block-${piece.color}`).setDisplaySize(GRID.cell-3,GRID.cell-3));
+    for (const [x,y] of shape.cells) container.add(sprite(this.scene,(x-(shape.width-1)/2)*GRID.cell, (y-(shape.height-1)/2)*GRID.cell, `block-${piece.color}`).setDisplaySize(GRID.cell-3,GRID.cell-3));
     return container;
   }
   trayTransform(index: number): PieceTransform | null {
@@ -150,7 +156,8 @@ export class BoardRenderer {
   clearPreview(): void {
     this.previewKey='';this.scene.tweens.killTweensOf(this.previewHalo);this.previewHalo.setAlpha(0);
     this.scene.tweens.killTweensOf(this.preview);this.scene.tweens.killTweensOf(this.previewOld);
-    this.preview.clear().setAlpha(1);this.previewOld.clear().setAlpha(0);
+    this.preview.setAlpha(1);this.previewOld.setAlpha(0);
+    for(const cell of this.previewCells)cell.setVisible(false);for(const cell of this.previewOldCells)cell.setVisible(false);for(const cell of this.lineCells)cell.setVisible(false);
   }
   showTutorial(show: boolean): void {
     this.tutorial.clear();
@@ -164,26 +171,29 @@ export class BoardRenderer {
     if(key===this.previewKey)return valid;
     if(!reduced&&this.previewKey){
       const old=this.preview;this.preview=this.previewOld;this.previewOld=old;
+      const oldCells=this.previewCells;this.previewCells=this.previewOldCells;this.previewOldCells=oldCells;
       this.scene.tweens.killTweensOf(this.preview);this.scene.tweens.killTweensOf(old);
       old.setAlpha(.2);this.scene.tweens.add({targets:old,alpha:0,duration:ANIMATION.previewMs});
     }
-    this.preview.clear().setAlpha(1);
+    this.preview.setAlpha(1);for(const cell of this.previewCells)cell.setVisible(false);for(const cell of this.lineCells)cell.setVisible(false);
     this.previewKey=key;
     const color = valid ? 0x78ead5 : 0xf2829f;
     this.scene.tweens.killTweensOf(this.previewHalo);
     if(reduced)this.previewHalo.setAlpha(0);
     else this.scene.tweens.add({targets:this.previewHalo,x:GRID.x+(x+shape.width/2)*52,y:GRID.y+(y+shape.height/2)*52,alpha:valid?.24:.05,duration:ANIMATION.previewMs});
     this.previewHalo.setDisplaySize(shape.width*52+35,shape.height*52+35).setTint(color);
-    for (const [dx,dy] of shape.cells) {
+    let index=0;for (const [dx,dy] of shape.cells) {
       const cx=x+dx,cy=y+dy;
       if(cx<0||cy<0||cx>=8||cy>=8) continue;
-      this.preview.fillStyle(color, valid ? 0.34 : 0.2).fillRoundedRect(GRID.x+cx*52+2,GRID.y+cy*52+2,48,48,7)
-        .lineStyle(2,color,0.8).strokeRoundedRect(GRID.x+cx*52+3,GRID.y+cy*52+3,46,46,7);
+      this.previewCells[index++].setPosition(GRID.x+cx*52+26,GRID.y+cy*52+26).setTint(color).setAlpha(valid?1:.6).setVisible(true);
     }
     if (valid) {
-      const predicted=cloneBoard(board);
-      for (const [dx,dy] of shape.cells) predicted[y+dy][x+dx]=1;
-      for(const [cx,cy] of findLines(predicted).cells) this.preview.fillStyle(0xb7fff1,0.18).fillRoundedRect(GRID.x+cx*52+2,GRID.y+cy*52+2,48,48,7);
+      for(let row=0;row<8;row++)for(let column=0;column<8;column++)this.predicted[row*8+column]=board[row][column];
+      for(const [dx,dy] of shape.cells)this.predicted[(y+dy)*8+x+dx]=1;
+      let rows=0,columns=0;
+      for(let row=0;row<8;row++){let full=true;for(let column=0;column<8;column++)if(!this.predicted[row*8+column]){full=false;break;}if(full)rows|=1<<row;}
+      for(let column=0;column<8;column++){let full=true;for(let row=0;row<8;row++)if(!this.predicted[row*8+column]){full=false;break;}if(full)columns|=1<<column;}
+      for(let i=0;i<64;i++)if((rows&(1<<Math.floor(i/8)))||(columns&(1<<(i%8))))this.lineCells[i].setVisible(true);
     }
     return valid;
   }

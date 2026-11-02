@@ -19,6 +19,7 @@ import { captureClear, type ClearEvent } from '../rendering/ClearEvent';
 export interface SceneDelegate {
   state: GameState; reducedMotion(): boolean; pixelRatio(): number; canInteract(): boolean; isTutorial(): boolean;
   intenseEffects():boolean;showSwapControl():boolean;
+  audioStats?():{audioBuffers:number;audioVoices:number};
   onPlace(slot: number,x: number,y: number): Placement | null;
   onPick(): void; onClearFeedback(event: ClearEvent): void; onSettled(): void; onReady(scene: GameScene): void;
 }
@@ -56,7 +57,7 @@ export class GameScene extends Phaser.Scene {
     window.addEventListener('keydown',this.key);
     this.events.once('shutdown',()=>{this.stopped=true;this.diagnostics?.destroy();this.cancelPresentation();this.controls.destroy();this.swapAnimation.cancel();this.neon.destroy();window.removeEventListener('keydown',this.key);});
     if(import.meta.env.DEV&&new URLSearchParams(location.search).get('perf')==='1'){
-      void import('../debug/PerfDiagnostics').then(({PerfDiagnostics})=>{if(!this.stopped)this.diagnostics=new PerfDiagnostics(()=>({activeEffects:this.feedback.active+this.neon.active,activeTweens:this.tweens.getTweens().length,placementMs:this.placementMs,clearMs:this.clearMs}));});
+      void import('../debug/PerfDiagnostics').then(({PerfDiagnostics})=>{if(!this.stopped)this.diagnostics=new PerfDiagnostics(()=>({activeEffects:this.feedback.active+this.neon.active,activeTweens:this.tweens.getTweens().length,placementMs:this.placementMs,clearMs:this.clearMs,...this.delegate.audioStats?.()}));});
     }
     this.delegate.onReady(this);
   }
@@ -78,7 +79,7 @@ export class GameScene extends Phaser.Scene {
     this.controls?.update();const reduced=this.delegate.reducedMotion(),intense=this.delegate.intenseEffects(),minimal=reduced||!intense;
     if(minimal&&!this.reducedEffects)this.feedback.reset();this.reducedEffects=minimal;
     this.neon?.configure(reduced,intense,this.game.loop.actualFps);
-    const step=this.time.paused?0:Math.max(0,Math.min(delta,100));this.neon?.update(step);this.feedback?.update(step);this.diagnostics?.frame(this.time.paused);
+    const step=this.time.paused?0:Math.max(0,delta);this.neon?.update(step);this.feedback?.update(step);this.diagnostics?.frame(this.time.paused);
   }
   private begin(slot:number,pose:DragPose): void {
     this.cancelDrag();this.finishReturn();const piece=this.delegate.state.tray[slot];if(!piece)return;

@@ -1,5 +1,5 @@
 /** GRID_PULSE_DEV_PERF_ONLY — imported only by Vite DEV, never shipped. */
-export interface WorkSample {activeEffects:number;activeTweens:number;placementMs:number;clearMs:number}
+export interface WorkSample {activeEffects:number;activeTweens:number;placementMs:number;clearMs:number;audioBuffers?:number;audioVoices?:number}
 export class PerfDiagnostics {
   private root=document.createElement('aside');private panel=document.createElement('pre');private frames=0;private elapsed=0;private previous=0;private maximum=0;
   constructor(private read:()=>WorkSample){
@@ -12,7 +12,7 @@ export class PerfDiagnostics {
     if(!this.previous){this.previous=now;return;}
     const delta=now-this.previous;this.previous=now;this.maximum=Math.max(this.maximum,delta);this.frames++;this.elapsed+=delta;
     if(this.elapsed<500)return;
-    const work=this.read();this.panel.textContent=`DEV PERF\nFPS ${(this.frames*1000/this.elapsed).toFixed(1)}\nFrame ${(this.elapsed/this.frames).toFixed(2)} ms\nMax frame ${this.maximum.toFixed(2)} ms\nEffects ${work.activeEffects}\nTweens ${work.activeTweens}\nPlace ${work.placementMs.toFixed(3)} ms\nClear ${work.clearMs.toFixed(3)} ms`;
+    const work=this.read();this.panel.textContent=`DEV PERF\nFPS ${(this.frames*1000/this.elapsed).toFixed(1)}\nFrame ${(this.elapsed/this.frames).toFixed(2)} ms\nMax frame ${this.maximum.toFixed(2)} ms\nEffects ${work.activeEffects}\nTweens ${work.activeTweens}\nPlace ${work.placementMs.toFixed(3)} ms\nClear ${work.clearMs.toFixed(3)} ms\nAudio buffers ${work.audioBuffers??0} / voices ${work.audioVoices??0}`;
     this.frames=0;this.elapsed=0;
   }
   reset():void{this.frames=0;this.elapsed=0;this.previous=0;this.maximum=0;this.panel.textContent='DEV PERF — waiting for active frames';}
