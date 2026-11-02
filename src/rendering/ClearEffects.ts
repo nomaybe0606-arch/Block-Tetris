@@ -47,11 +47,11 @@ export class ClearEffects {
       }
       const accents=Math.min(this.budget(4),Math.ceil(event.cells.length/8));
       for(let i=0;i<accents;i++){const cell=event.cells[Math.floor(i*event.cells.length/accents)];this.pulse(GRID.x+cell.x*52+26,GRID.y+cell.y*52+26,160,160,parseInt(COLORS[cell.color-1].slice(1),16),.28,start);}
-      if(multi)this.pulse(240,438,480,480,event.combo>=3?0xf377de:0x9c93ff,.4,start);
+      if(multi)this.pulse(240,GRID.y+GRID.cell*GRID.size/2,480,480,event.combo>=3?0xf377de:0x9c93ff,.4,start);
     }
     const sound=this.sounds[this.soundCursor++%this.sounds.length];sound.at=start;
     // Also start the score callout on the event's visual start, without a scene timer.
-    sound.callback=()=>{onStart?.();this.callout.show(`+${event.points}${event.combo>1?` · Combo ${Math.min(8,event.combo)}×`:''}`,240,400,Math.min(4,Math.max(event.rows.length+event.columns.length,event.combo>=4?3:event.combo>=2?2:1)),reduced);};
+    sound.callback=()=>{onStart?.();this.callout.show(`+${event.points}${event.combo>1?` · Combo ${Math.min(8,event.combo)}×`:''}`,240,GRID.y+170,Math.min(4,Math.max(event.rows.length+event.columns.length,event.combo>=4?3:event.combo>=2?2:1)),reduced);};
     if(reduced){const callback=sound.callback;sound.callback=null;callback();}
   }
   private line(x:number,y:number,horizontal:boolean,start:number,color:number,multi:boolean):void{

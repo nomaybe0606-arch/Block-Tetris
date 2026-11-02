@@ -34,15 +34,13 @@ export class BoardRenderer {
   constructor(private scene: Phaser.Scene) {
     this.root = scene.add.container();
     const g = scene.add.graphics();
-    g.fillStyle(0x060b20, 0.3).fillRoundedRect(22, 224, 436, 438, 22);
-    g.fillStyle(0x0b1026).fillRoundedRect(24, 222, 432, 432, 20);
-    g.lineStyle(1.5, 0x6170aa, 0.26).strokeRoundedRect(24, 222, 432, 432, 20);
-    // A quiet tray with three generous hit areas, rather than button-shaped pieces.
-    TRAY.centers.forEach(x => { g.fillStyle(0x1e2546, 0.46).fillRoundedRect(x-64, 684, 128, 110, 18); });
+    g.fillStyle(0x060b20, 0.3).fillRoundedRect(22, GRID.y-6, 436, 438, 22);
+    g.fillStyle(0x0b1026).fillRoundedRect(24, GRID.y-8, 432, 432, 20);
+    g.lineStyle(1.5, 0x6170aa, 0.26).strokeRoundedRect(24, GRID.y-8, 432, 432, 20);
     g.generateTexture('board-frame',480,850);g.destroy();
     const surround=sprite(scene,240,425,'board-frame').setDisplaySize(480,850);
-    const ambient=sprite(scene,240,438,'neon-glow').setTint(0x6b6dff).setDisplaySize(550,590).setAlpha(.17).setBlendMode('ADD');
-    const glass=sprite(scene,240,438,'board-glass').setDisplaySize(432,432);
+    const ambient=sprite(scene,240,GRID.y+GRID.cell*GRID.size/2,'neon-glow').setTint(0x6b6dff).setDisplaySize(550,590).setAlpha(.17).setBlendMode('ADD');
+    const glass=sprite(scene,240,GRID.y+GRID.cell*GRID.size/2,'board-glass').setDisplaySize(432,432);
     const reflectionLayer=scene.add.container();
     this.clearLayer=scene.add.container();this.blocks = scene.add.container(); this.tray = scene.add.container();
     this.tutorial = scene.add.graphics(); this.preview = scene.add.container();this.previewOld=scene.add.container();

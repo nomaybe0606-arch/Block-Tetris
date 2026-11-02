@@ -3,11 +3,21 @@ import { GRID, TRAY, VIEW } from '../src/config/layout';
 import { DRAG } from '../src/config/controls';
 import { canPlace, emptyBoard } from '../src/core/board';
 import { getShape } from '../src/core/shapes';
-import { clientToWorld, createGrip, pieceHitDistance, poseAt } from '../src/input/dragGeometry';
+import { clientToWorld, createGrip, createZoneGrip, trayPickupSlot, pieceHitDistance, poseAt } from '../src/input/dragGeometry';
 
 const rect={left:100,top:50,width:360,height:637.5};
 const transform={x:TRAY.centers[0],y:TRAY.y,scale:TRAY.scale};
 describe('contact-preserving pickup',()=>{
+  it('gives every pixel under the board exactly one column, including the dividing lines',()=>{
+    for(let x=0;x<480;x++){const slot=trayPickupSlot({x,y:TRAY.pickupTop});expect(slot).toBeGreaterThanOrEqual(0);expect(slot).toBeLessThan(3);}
+    expect(trayPickupSlot({x:171,y:700})).toBe(1);expect(trayPickupSlot({x:309,y:700})).toBe(2);
+  });
+  it.each([.5,.75,1,1.5])('keeps remote pickup continuous and finger clearance constant at CSS scale %s',scale=>{
+    const shape=getShape('square-3'),point={x:40,y:TRAY.pickupBottom-1},screen={left:0,top:0,width:480*scale,height:850*scale};
+    const grip=createZoneGrip(point,shape,transform,true,screen),initial=poseAt(point,grip,0),full=poseAt(point,grip,1);
+    expect(initial).toMatchObject(transform);expect(full.x).toBe(point.x);expect((point.y-full.y-shape.height*52/2)*scale).toBeCloseTo(22);
+    for(const p of [0,.25,.5,.75,1]){const a=poseAt(point,grip,p),b=poseAt({x:point.x+50,y:point.y-100},grip,p);expect(b.x-a.x).toBeCloseTo(50);expect(b.y-a.y).toBeCloseTo(-100);}
+  });
   it.each(['single','line-5-h','line-5-v','square-3','L-0','T-0'])('%s preserves both edge contacts during growth and lift',id=>{
     const shape=getShape(id);
     for(const cell of [shape.cells[0],shape.cells[shape.cells.length-1]])for(const touch of [false,true]){
@@ -50,7 +60,7 @@ describe('CSS scaling, DPR independence and board boundaries',()=>{
     expect((point.y-pose.y-shape.height*GRID.cell/2)*scale).toBeCloseTo(DRAG.touchClearanceCss);
   });
   it.each(['single','line-5-h','line-5-v','square-3','L-0','T-0'])('%s previews and fits exactly at all four edges',id=>{
-    const shape=getShape(id),grip=createGrip({x:102,y:736},shape,transform,false,rect);
+    const shape=getShape(id),grip=createGrip({x:102,y:TRAY.y},shape,transform,false,rect);
     for(const [column,row] of [[0,0],[8-shape.width,0],[0,8-shape.height],[8-shape.width,8-shape.height]]){
       const point={x:GRID.x+(column+shape.width/2)*GRID.cell,y:GRID.y+(row+shape.height/2)*GRID.cell};
       const pose=poseAt(point,grip,1);

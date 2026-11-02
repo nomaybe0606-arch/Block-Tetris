@@ -1,4 +1,4 @@
-import { GRID, VIEW } from '../config/layout';
+import { GRID, TRAY, VIEW } from '../config/layout';
 import { DRAG } from '../config/controls';
 import type { Shape } from '../core/types';
 
@@ -10,6 +10,7 @@ export interface Grip {
   contact: Point;
   initialScale: number;
   lift: number;
+  startOffset?:Point;
 }
 export interface DragPose extends PieceTransform { column: number; row: number }
 
@@ -39,11 +40,22 @@ export function createGrip(point: Point, shape: Shape, transform: PieceTransform
   return {shape,contact,initialScale:transform.scale,lift};
 }
 
+/** Non-overlapping, invisible columns from the board's outside edge to the lower controls. */
+export function trayPickupSlot(point:Point,bottom=TRAY.pickupBottom):number{
+  if(point.y<TRAY.pickupTop||point.y>=bottom||point.x<0||point.x>=VIEW.width)return -1;
+  if(point.x<(TRAY.centers[0]+TRAY.centers[1])/2)return 0;
+  return point.x<(TRAY.centers[1]+TRAY.centers[2])/2?1:2;
+}
+/** A remote touch starts at the actual tray pose, then smoothly joins a center grip. */
+export function createZoneGrip(point:Point,shape:Shape,transform:PieceTransform,touch:boolean,rect:CanvasRect):Grip{
+  return {...createGrip(transform,shape,transform,touch,rect),startOffset:{x:transform.x-point.x,y:transform.y-point.y}};
+}
+
 export function poseAt(point: Point, grip: Grip, progress: number): DragPose {
   const eased=1-(1-Math.max(0,Math.min(1,progress)))**3;
   const scale=grip.initialScale+(DRAG.targetScale-grip.initialScale)*eased;
-  const x=point.x-grip.contact.x*scale;
-  const y=point.y-grip.contact.y*scale-grip.lift*eased;
+  const x=point.x-grip.contact.x*scale+(grip.startOffset?.x??0)*(1-eased);
+  const y=point.y-grip.contact.y*scale-grip.lift*eased+(grip.startOffset?.y??0)*(1-eased);
   return {
     x,y,scale,
     column:Math.round((x-GRID.x-grip.shape.width*GRID.cell/2)/GRID.cell),

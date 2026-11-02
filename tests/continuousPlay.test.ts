@@ -37,7 +37,7 @@ describe('continuous logical play during independent clearing',()=>{
   });
   it('never erases or fades a new cell at a previously cleared coordinate',()=>{
     const s=setup();s.drop(0,7,0);s.drop(1,0,0);
-    const current=s.app.state,before=JSON.stringify(current),block=s.fake.nodes.find(node=>node.key==='block-3'&&node.x===58&&node.y===256)!;
+    const current=s.app.state,before=JSON.stringify(current),block=s.fake.nodes.find(node=>node.key==='block-3'&&node.x===58&&node.y===GRID.y+26)!;
     s.feedback.update(80);s.feedback.update(1000);s.fake.complete();
     expect(s.app.state).toBe(current);expect(JSON.stringify(s.app.state)).toBe(before);expect(block.visible).toBe(true);expect(block.alpha).toBe(1);
     expect(s.board.clearLayer.list.every(node=>(node as unknown)!==block)).toBe(true);expect(s.feedback.active).toBe(0);
@@ -91,6 +91,20 @@ describe('continuous logical play during independent clearing',()=>{
       expect(s.app.state.lines).toBe(1);expect(s.feedback.active).toBeGreaterThan(0);
       fire('pointerdown',2,TRAY.centers[1],TRAY.y);fire('pointerup',2,GRID.x+26,GRID.y+26);
       expect(s.app.state.moves).toBe(2);expect(s.app.state.board[0][0]).toBe(3);expect(held.size).toBe(0);
+    }finally{controls.destroy();dom.close();vi.unstubAllGlobals();}
+  });
+  it('clears and immediately places again using only the empty space below both figures',()=>{
+    const dom=new Window();vi.stubGlobal('window',dom);vi.stubGlobal('document',dom.document);
+    const s=setup(),canvas=dom.document.createElement('canvas');dom.document.body.append(canvas);canvas.getBoundingClientRect=()=>new dom.DOMRect(0,0,480,850);
+    const held=new Set<number>();Object.assign(canvas,{setPointerCapture:(id:number)=>held.add(id),hasPointerCapture:(id:number)=>held.has(id),releasePointerCapture:(id:number)=>held.delete(id)});
+    const controls=new DragController(canvas as unknown as HTMLCanvasElement,{enabled:()=>s.app.canInteract(),getPiece:slot=>{const piece=s.app.state.tray[slot],transform=s.board.trayTransform(slot);return piece&&transform?{piece,shape:getShape(piece.shapeId),transform}:null;},reducedMotion:()=>false,preparePickup:()=>{},begin:(slot,pose)=>s.scene['begin'](slot,pose),move:pose=>s.scene['move'](pose),end:(x,y)=>s.scene['drop'](x,y),cancel:()=>s.scene.cancel()});
+    const fire=(type:string,id:number,x:number,y:number)=>canvas.dispatchEvent(new dom.PointerEvent(type,{pointerId:id,pointerType:'touch',button:0,clientX:x,clientY:y,bubbles:true,cancelable:true}));
+    try{
+      fire('pointerdown',1,TRAY.centers[0],TRAY.pickupBottom-1);controls.update(performance.now()+101);fire('pointerup',1,GRID.x+7*52+26,GRID.y+26+48);
+      expect(s.app.state.lines).toBe(1);expect(s.feedback.active).toBeGreaterThan(0);expect(s.app.canInteract()).toBe(true);
+      fire('pointerdown',2,TRAY.centers[1],TRAY.pickupBottom-1);controls.update(performance.now()+101);fire('pointerup',2,GRID.x+26,GRID.y+26+48);
+      expect(s.app.state.moves).toBe(2);expect(s.app.state.board[0][0]).toBe(3);expect(s.app.state.score).toBe(12);expect(held.size).toBe(0);
+      s.feedback.update(1000);expect(s.app.state.board[0][0]).toBe(3);
     }finally{controls.destroy();dom.close();vi.unstubAllGlobals();}
   });
   it('can turn off ongoing motion without touching the committed board or blocking input',()=>{

@@ -78,7 +78,7 @@ export class NeonEffects {
   }
   clearAccent(result:Placement,board:Board):void{
     for(const [x,y] of result.cleared.filter((_,i)=>i%8===0).slice(0,6))this.pulse(GRID.x+x*52+26,GRID.y+y*52+26,160,160,this.color(board[y][x]),.25);
-    if(result.rows.length+result.columns.length>=2)this.pulse(240,438,480,480,result.state.combo>=3?0xf377de:0x9c93ff,.4);
+    if(result.rows.length+result.columns.length>=2)this.pulse(240,GRID.y+GRID.cell*GRID.size/2,480,480,result.state.combo>=3?0xf377de:0x9c93ff,.4);
   }
   assemble(from:{x:number;y:number}[],to:{x:number;y:number}[],color:number,duration:number):void{
     const count=this.budget(Math.max(from.length,to.length)*2);

@@ -21,6 +21,7 @@ class FakeCanvas extends EventTarget {
   }
 }
 let now=0;
+const targetY=GRID.y+6*GRID.cell+GRID.cell/2;
 let controllers:DragController[];
 beforeEach(()=>{
   vi.restoreAllMocks();now=0;controllers=[];
@@ -43,10 +44,10 @@ function setup(shapeId='line-3-h'){
 describe('immediate input and preview/drop agreement',()=>{
   it.each(['mouse','touch'])('commits a fast %s drag without waiting for any animation frame',pointerType=>{
     const {canvas,host,preview}=setup();
-    canvas.pointer('pointerdown',102,736,{pointerType});
-    canvas.pointer('pointermove',370,568,{pointerType});
-    expect(preview()).toMatchObject({x:370,y:568,column:5,row:6,scale:TRAY.scale});
-    canvas.pointer('pointerup',370,568,{pointerType});canvas.pointer('lostpointercapture',370,568);
+    canvas.pointer('pointerdown',102,TRAY.y,{pointerType});
+    canvas.pointer('pointermove',370,targetY,{pointerType});
+    expect(preview()).toMatchObject({x:370,y:targetY,column:5,row:6,scale:TRAY.scale});
+    canvas.pointer('pointerup',370,targetY,{pointerType});canvas.pointer('lostpointercapture',370,targetY);
     expect(host.end).toHaveBeenCalledExactlyOnceWith(5,6);expect(host.cancel).not.toHaveBeenCalled();expect(canvas.captured.size).toBe(0);
     const moves=host.move.mock.calls.length;frame(100);expect(host.move).toHaveBeenCalledTimes(moves);
   });
@@ -66,12 +67,12 @@ describe('immediate input and preview/drop agreement',()=>{
   });
   it.each([1,2,3])('is independent of backing-buffer DPR %s',dpr=>{
     const {canvas,host}=setup();canvas.width=480*dpr;canvas.height=850*dpr;canvas.rect={left:37,top:91,width:320,height:850*2/3};
-    canvas.pointer('pointerdown',102,736);frame(100);canvas.pointer('pointerup',370,568);expect(host.end).toHaveBeenCalledExactlyOnceWith(5,6);
+    canvas.pointer('pointerdown',102,TRAY.y);frame(100);canvas.pointer('pointerup',370,targetY);expect(host.end).toHaveBeenCalledExactlyOnceWith(5,6);
   });
   it('uses mouse contact without finger lift and finishes touch pickup with CSS clearance',()=>{
-    const mouse=setup();mouse.canvas.pointer('pointerdown',102,736);frame(100);expect(mouse.preview().y).toBe(736);mouse.controller.destroy();
-    const touch=setup();touch.canvas.pointer('pointerdown',102,736,{pointerType:'touch'});frame(200);
-    expect((736-touch.preview().y-26)*touch.canvas.rect.height/850).toBeCloseTo(DRAG.touchClearanceCss);
+    const mouse=setup();mouse.canvas.pointer('pointerdown',102,TRAY.y);frame(100);expect(mouse.preview().y).toBe(TRAY.y);mouse.controller.destroy();
+    const touch=setup();touch.canvas.pointer('pointerdown',102,TRAY.y,{pointerType:'touch'});frame(200);
+    expect((TRAY.y-touch.preview().y-26)*touch.canvas.rect.height/850).toBeCloseTo(DRAG.touchClearanceCss);
   });
   it.each(['line-5-h','line-5-v','square-3','L-0','T-0'])('%s picked at an end previews and drops at the bottom-right boundary',id=>{
     const {canvas,host,shape,transform,preview}=setup(id),cell=shape.cells.at(-1)!;
@@ -91,8 +92,49 @@ describe('immediate input and preview/drop agreement',()=>{
   });
 });
 describe('hit testing, capture, and cancellation',()=>{
-  it('uses occupied cells rather than the entire slot as a hitbox',()=>{
-    const {canvas,host}=setup('single');canvas.pointer('pointerdown',150,736,{pointerType:'touch'});expect(host.begin).not.toHaveBeenCalled();
+  it.each([0,1,2])('picks slot %s anywhere between the board edge and the lower controls',slot=>{
+    const s=setup('single'),shape=getShape('single'),transform={x:TRAY.centers[slot],y:TRAY.y,scale:.59};
+    s.host.getPiece.mockImplementation(index=>index===slot?{piece:{shapeId:shape.id,color:2},shape,transform}:null);
+    for(const y of [TRAY.pickupTop,TRAY.pickupTop+8,TRAY.y+60,TRAY.pickupBottom-1]){
+      s.canvas.pointer('pointerdown',TRAY.centers[slot],y,{pointerType:'touch'});
+      expect(s.host.begin.mock.calls.at(-1)?.[0]).toBe(slot);expect(s.preview().x).toBe(transform.x);expect(s.preview().y).toBe(transform.y);
+      s.canvas.pointer('pointercancel',0,0);
+    }
+    expect(s.host.begin).toHaveBeenCalledTimes(4);
+  });
+  it('never steals a board touch, a lower-control touch or a touch outside the canvas',()=>{
+    const s=setup('single');for(const [x,y] of [[102,TRAY.pickupTop-1],[102,TRAY.pickupBottom],[102,860],[-1,750],[480,750]])s.canvas.pointer('pointerdown',x,y,{pointerType:'touch'});
+    expect(s.host.begin).not.toHaveBeenCalled();
+  });
+  it('reserves the lower button area only when the control is present',()=>{
+    const s=setup('single');Object.assign(s.host,{pickupBottom:()=>TRAY.controlsTop});
+    s.canvas.pointer('pointerdown',102,TRAY.controlsTop,{pointerType:'touch'});s.canvas.pointer('pointerdown',102,820,{pointerType:'touch'});expect(s.host.begin).not.toHaveBeenCalled();
+    s.canvas.pointer('pointerdown',102,TRAY.controlsTop-1,{pointerType:'touch'});expect(s.host.begin).toHaveBeenCalledTimes(1);
+  });
+  it('does not select a neighbour when the touched column has been used',()=>{
+    const s=setup('single');s.canvas.pointer('pointerdown',TRAY.centers[1],TRAY.pickupBottom-1,{pointerType:'touch'});expect(s.host.begin).not.toHaveBeenCalled();
+    s.canvas.pointer('pointerdown',TRAY.centers[0],TRAY.pickupBottom-1,{pointerType:'touch'});expect(s.host.begin).toHaveBeenCalledTimes(1);
+  });
+  it('keeps adjacent columns separate even if slop would reach the neighbouring piece',()=>{
+    const s=setup('single');s.host.getPiece.mockImplementation(slot=>slot===0?{piece:{shapeId:'single',color:2},shape:getShape('single'),transform:{x:170,y:TRAY.y,scale:.59}}:null);
+    s.canvas.pointer('pointerdown',172,TRAY.y,{pointerType:'touch'});expect(s.host.begin).not.toHaveBeenCalled();
+  });
+  it('moves a remotely grabbed figure immediately by the entire pointer delta before the first frame',()=>{
+    const s=setup('square-3'),downY=TRAY.pickupBottom-1;s.canvas.pointer('pointerdown',102,downY,{pointerType:'touch'});const before=s.preview();
+    s.canvas.pointer('pointermove',302,downY-300,{pointerType:'touch'});expect(s.preview().x-before.x).toBe(200);expect(s.preview().y-before.y).toBe(-300);
+    const shown=s.preview();s.canvas.pointer('pointerup',302,downY-300,{pointerType:'touch'});expect(s.host.end).toHaveBeenCalledExactlyOnceWith(shown.column,shown.row);
+  });
+  it('remotely picks a tall figure without exaggerated off-center lift and preserves preview/drop',()=>{
+    const s=setup('line-5-v');s.canvas.pointer('pointerdown',50,TRAY.pickupBottom-1,{pointerType:'touch'});frame(100);
+    expect(s.preview().x).toBe(50);expect((TRAY.pickupBottom-1-s.preview().y-5*52/2)*s.canvas.rect.height/850).toBeCloseTo(DRAG.touchClearanceCss);
+    s.canvas.pointer('pointermove',320,600,{pointerType:'touch'});const shown=s.preview();s.canvas.pointer('pointerup',320,600,{pointerType:'touch'});expect(s.host.end).toHaveBeenCalledExactlyOnceWith(shown.column,shown.row);
+  });
+  it('allows a second remote pickup immediately after a quick release',()=>{
+    const s=setup('single');for(let i=0;i<2;i++){s.canvas.pointer('pointerdown',102,TRAY.pickupBottom-1,{pointerType:'touch'});s.canvas.pointer('pointerup',102,TRAY.pickupBottom-1,{pointerType:'touch'});}
+    expect(s.host.begin).toHaveBeenCalledTimes(2);expect(s.host.end).toHaveBeenCalledTimes(2);expect(s.canvas.captured.size).toBe(0);
+  });
+  it('also accepts empty space in the column of a single-cell piece',()=>{
+    const {canvas,host}=setup('single');canvas.pointer('pointerdown',150,TRAY.y,{pointerType:'touch'});expect(host.begin).toHaveBeenCalledTimes(1);
   });
   it('can pick the top of a tall tray piece, outside the former fixed tray bounds',()=>{
     const {canvas,host}=setup('line-5-v');canvas.pointer('pointerdown',102,736-104*TRAY.scale);expect(host.begin).toHaveBeenCalledTimes(1);
