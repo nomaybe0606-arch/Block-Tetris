@@ -4,19 +4,31 @@
       "path": "promo/crazygames/covers/grid-pulse-landscape.png",
       "width": 1920,
       "height": 1080,
-      "bytes": 2503230
+      "bytes": 2364724,
+      "reviewedGrid": {
+        "rows": 8,
+        "columns": 8
+      }
     },
     {
       "path": "promo/crazygames/covers/grid-pulse-portrait.png",
       "width": 800,
       "height": 1200,
-      "bytes": 1422889
+      "bytes": 1335520,
+      "reviewedGrid": {
+        "rows": 8,
+        "columns": 8
+      }
     },
     {
       "path": "promo/crazygames/covers/grid-pulse-square.png",
       "width": 800,
       "height": 800,
-      "bytes": 1008024
+      "bytes": 1008024,
+      "reviewedGrid": {
+        "rows": 8,
+        "columns": 8
+      }
     }
   ],
   "videos": [
@@ -29,8 +41,8 @@
       "codec": "h264",
       "pixelFormat": "yuv420p",
       "audio": false,
-      "bytes": 2832380,
-      "openingCoverMeanError": 5.549985532407407,
+      "bytes": 2483067,
+      "openingCoverMeanError": 6.081597222222222,
       "capture": {
         "format": "landscape",
         "moves": 6,
@@ -50,8 +62,8 @@
       "codec": "h264",
       "pixelFormat": "yuv420p",
       "audio": false,
-      "bytes": 2365561,
-      "openingCoverMeanError": 4.644495081018518,
+      "bytes": 2029693,
+      "openingCoverMeanError": 4.944408275462963,
       "capture": {
         "format": "portrait",
         "moves": 6,

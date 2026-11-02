@@ -1,0 +1,103 @@
+{
+  "date": "2026-11-02",
+  "method": "Manual visual row/column count; hashes bind this review to these exact files. This is not an automatic computer-vision cell detector.",
+  "videoReview": "Opening cover and gameplay frames at 1, 3, 6, 10, 14 and 17 seconds. Actual capture uses GRID.size=8. Gameplay timing unchanged; corrected cover holds until 0.55s and fades by 0.75s.",
+  "files": [
+    {
+      "path": "promo/crazygames/covers/grid-pulse-landscape.png",
+      "rows": 8,
+      "columns": 8,
+      "sha256": "4e9f74df742a398414536ab876f7e41a172c7c510bd19a2062ceef400b305219"
+    },
+    {
+      "path": "promo/crazygames/covers/grid-pulse-portrait.png",
+      "rows": 8,
+      "columns": 8,
+      "sha256": "28da13182597a34cc3ecd85fc60df67aeeafb6989dcd07e4cc6fdc165ae4e5d4"
+    },
+    {
+      "path": "promo/crazygames/covers/grid-pulse-square.png",
+      "rows": 8,
+      "columns": 8,
+      "sha256": "4189a418aead6b4667d51bb078b945305262b4f1e4a81a261bc5e727d5cc2a1a"
+    },
+    {
+      "path": "promo/crazygames/video/grid-pulse-landscape.mp4",
+      "rows": 8,
+      "columns": 8,
+      "sha256": "d93de4f0a70f4e729d2902c1c61bb5ed6d6bb6881d572c7e208256f1da37799e"
+    },
+    {
+      "path": "promo/crazygames/video/grid-pulse-portrait.mp4",
+      "rows": 8,
+      "columns": 8,
+      "sha256": "82a4060b71eb9b3b1d73c128fcee5aea2984919876a5453e5ccf08a3a6f45112"
+    },
+    {
+      "path": "promo/crazygames/source/landscape.png",
+      "rows": 8,
+      "columns": 8,
+      "sha256": "504be49723e3b17680bc45e0be1272ac2f003ffd5974228ee4f8dadea1f9174b"
+    },
+    {
+      "path": "promo/crazygames/source/portrait.png",
+      "rows": 8,
+      "columns": 8,
+      "sha256": "7130808c434bec37107fcf305e476de375d257d8b7d51c26bbe71b38025758ec"
+    },
+    {
+      "path": "promo/crazygames/source/square.png",
+      "rows": 8,
+      "columns": 8,
+      "sha256": "caaf1c445df35de7789ff223245ad1c3f9e92a54af1c253d33c822fb83b1a302"
+    },
+    {
+      "path": "promo/vk/snippet-1120x630.png",
+      "rows": 8,
+      "columns": 8,
+      "sha256": "4fc03e1d70bfc5bfe98074a257f78bf0d9d4450cfeee0491cd7c6f7a2b2bd1cb"
+    },
+    {
+      "path": "promo/pikabu/cover-1920x1080.png",
+      "rows": 8,
+      "columns": 8,
+      "sha256": "8c94cc3543cc30b278c0897aa04a4f94c59a23b410dbab5337d4e7db5d678bb4"
+    },
+    {
+      "path": "promo/vk/screenshot-1-1200x600.png",
+      "rows": 8,
+      "columns": 8,
+      "sha256": "0186c9a0c99e742ccc7a40e97f60ef85f116c907c8789c7b01c26818906d8da0"
+    },
+    {
+      "path": "promo/vk/screenshot-2-1200x600.png",
+      "rows": 8,
+      "columns": 8,
+      "sha256": "4d9fa3e62d8bb49bad1777e628795c85f3294e5636b93c9c6a35c6f43549e66a"
+    },
+    {
+      "path": "promo/vk/screenshot-3-1200x600.png",
+      "rows": 8,
+      "columns": 8,
+      "sha256": "dea4eacbc27e4930b78438c1b0dbb83f5d5e7e99f7a0242687efac64ca0a4ef4"
+    },
+    {
+      "path": "promo/pikabu/screenshot-1-1920x1080.png",
+      "rows": 8,
+      "columns": 8,
+      "sha256": "bb617063e7f97704db962e9cd0c2395245189cefd4bf99a040cd27eec359cd73"
+    },
+    {
+      "path": "promo/pikabu/screenshot-2-1920x1080.png",
+      "rows": 8,
+      "columns": 8,
+      "sha256": "f0f63693a01e081da77dc30329b62caea0bdb955591a4800d29a45a7c34b2b97"
+    },
+    {
+      "path": "promo/pikabu/screenshot-3-1920x1080.png",
+      "rows": 8,
+      "columns": 8,
+      "sha256": "3a0b72fd714edd6a9b635238221877163ecedcc255100d002a479b441ce8ea54"
+    }
+  ]
+}

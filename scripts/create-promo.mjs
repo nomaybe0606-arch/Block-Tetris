@@ -37,6 +37,7 @@ p{color:#b9c2e0;font-weight:600}
 const blockStyle = color => `--c:${color}80;background:linear-gradient(155deg,${color}ee,${color} 45%,${color}99)`;
 // A board as rows of characters: '.' is empty, digits pick a colour, '*' marks a line that is clearing.
 function board(rows, cell, gap, style) {
+  if(rows.length!==8||rows.some(row=>row.length!==8))throw new Error('Catalogue artwork must use an 8×8 board');
   const html = rows.flatMap(row => [...row].map(ch => {
     if (ch === '.') return '<i class="cell"></i>';
     if (ch === '*') return `<i class="block glow" style="${blockStyle('#ffffff')}"></i>`;

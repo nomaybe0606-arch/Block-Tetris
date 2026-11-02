@@ -38,11 +38,10 @@ async function record(format:'landscape'|'portrait'):Promise<void>{
   if(recording||!scene)return;recording=true;clears=0;delegate.state=fixture();scene.refresh();
   game.canvas.setPointerCapture=()=>{};game.canvas.hasPointerCapture=()=>false;
   const landscape=format==='landscape',output=document.createElement('canvas');output.width=landscape?1920:1080;output.height=landscape?1080:1620;
-  const ctx=output.getContext('2d')!,cover=new Image();cover.src=`/promo/crazygames/covers/grid-pulse-${format}.png`;await cover.decode();
+  const ctx=output.getContext('2d')!;
   const stream=output.captureStream(30),mime=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m=>MediaRecorder.isTypeSupported(m))!,recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:12_000_000}),chunks:Blob[]=[];
   recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};const stopped=new Promise<Blob>(resolve=>{recorder.onstop=()=>resolve(new Blob(chunks,{type:mime}));});
   const begun=performance.now(),draw=()=>{
-    const elapsed=(performance.now()-begun)/1000;
     const gradient=ctx.createLinearGradient(0,0,output.width,output.height);gradient.addColorStop(0,'#201d46');gradient.addColorStop(1,'#103448');ctx.fillStyle=gradient;ctx.fillRect(0,0,output.width,output.height);
     if(landscape){
       const halo=ctx.createRadialGradient(610,660,0,610,660,780);halo.addColorStop(0,'#354e6e');halo.addColorStop(1,'#18203900');ctx.fillStyle=halo;ctx.fillRect(0,0,1920,1080);
@@ -53,8 +52,7 @@ async function record(format:'landscape'|'portrait'):Promise<void>{
     ctx.save();ctx.translate(ox,oy);ctx.scale(scale,scale);ctx.drawImage(game.canvas,0,0,480,850);
     ctx.fillStyle='#f4f2ff';ctx.font='bold 21px Trebuchet MS';ctx.fillText('GRID PULSE',32,53);ctx.font='bold 12px Trebuchet MS';ctx.fillStyle='#a4accd';ctx.fillText('SCORE',32,93);ctx.font='bold 60px Trebuchet MS';ctx.fillStyle='#f4f2ff';ctx.fillText(String(delegate.state.score),32,151);
     ctx.fillStyle='#e7cf90';ctx.font='bold 23px Trebuchet MS';ctx.textAlign='right';ctx.fillText(String(delegate.state.best),448,133);ctx.font='10px Trebuchet MS';ctx.fillStyle='#a4accd';ctx.fillText('PERSONAL BEST',448,101);ctx.textAlign='left';ctx.font='11px Trebuchet MS';ctx.fillText('CLASSIC   8 × 8',32,185);ctx.textAlign='right';ctx.fillText(delegate.state.combo>1?`COMBO ×${Math.min(8,delegate.state.combo)}`:`LINES ${delegate.state.lines}`,448,185);ctx.textAlign='center';ctx.fillStyle='#a4accd';ctx.font='11px Trebuchet MS';ctx.fillText('YOUR NEXT MOVES',240,650);ctx.restore();
-    // 0.12s exact cover, then a short crossfade into continuous real gameplay.
-    if(elapsed<.55){ctx.save();ctx.globalAlpha=elapsed<.12?1:Math.max(0,1-(elapsed-.12)/.43);ctx.drawImage(cover,0,0,output.width,output.height);ctx.restore();}
+    // Keep raw footage cover-free; the finalizer adds the current verified artwork.
   };
   game.events.on('postrender',draw);draw();recorder.start(250);status.textContent=`Recording ${format}…`;
   try{
