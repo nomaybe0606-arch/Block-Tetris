@@ -131,7 +131,16 @@ describe('hit testing, capture, and cancellation',()=>{
   });
   it('allows a second remote pickup immediately after a quick release',()=>{
     const s=setup('single');for(let i=0;i<2;i++){s.canvas.pointer('pointerdown',102,TRAY.pickupBottom-1,{pointerType:'touch'});s.canvas.pointer('pointerup',102,TRAY.pickupBottom-1,{pointerType:'touch'});}
-    expect(s.host.begin).toHaveBeenCalledTimes(2);expect(s.host.end).toHaveBeenCalledTimes(2);expect(s.canvas.captured.size).toBe(0);
+    expect(s.host.begin).toHaveBeenCalledTimes(2);expect(s.host.cancel).toHaveBeenCalledTimes(2);expect(s.host.end).not.toHaveBeenCalled();expect(s.canvas.captured.size).toBe(0);
+  });
+  it('does not place from a stationary remote tap even if its lift reaches the board',()=>{
+    const s=setup('single');s.canvas.pointer('pointerdown',102,TRAY.pickupTop,{pointerType:'touch'});frame(100);s.canvas.pointer('pointerup',102,TRAY.pickupTop,{pointerType:'touch'});
+    expect(s.host.end).not.toHaveBeenCalled();expect(s.host.cancel).toHaveBeenCalledTimes(1);expect(s.canvas.captured.size).toBe(0);
+  });
+  it('starts the remote drag immediately while rejecting only tiny finger jitter on release',()=>{
+    const s=setup('single');s.canvas.pointer('pointerdown',102,TRAY.pickupTop,{pointerType:'touch'});const initial=s.preview();
+    s.canvas.pointer('pointermove',104,TRAY.pickupTop-2,{pointerType:'touch'});expect(s.preview().x-initial.x).toBe(2);
+    s.canvas.pointer('pointerup',104,TRAY.pickupTop-2,{pointerType:'touch'});expect(s.host.end).not.toHaveBeenCalled();expect(s.host.cancel).toHaveBeenCalledTimes(1);
   });
   it('also accepts empty space in the column of a single-cell piece',()=>{
     const {canvas,host}=setup('single');canvas.pointer('pointerdown',150,TRAY.y,{pointerType:'touch'});expect(host.begin).toHaveBeenCalledTimes(1);
