@@ -7,6 +7,8 @@ import type { Profile, Settings } from './platform/profile';
 import { AudioService } from './audio/AudioService';
 import { GameScene, type SceneDelegate } from './scenes/GameScene';
 import { Interface, type Modal, type Screen } from './ui/Interface';
+import { fitFrame } from './ui/frameFit';
+import { hideLoader } from './ui/loader';
 import { SwapController } from './ui/SwapController';
 import { strings } from './localization/strings';
 import { MONETIZATION } from './config/monetization';
@@ -59,7 +61,8 @@ export class App implements SceneDelegate {
   }
   onReady(scene:GameScene):void {
     this.scene=scene;scene.show(false);this.render();
-    document.querySelector('#loader')?.remove();this.platform.message('game_ready');this.platformChanged();
+    // The host learns the game is ready once the loading screen has actually faded out.
+    void hideLoader().then(()=>this.platform.message('game_ready'));this.platformChanged();
   }
   reducedMotion():boolean{return this.profile.settings.reducedMotion;}
   intenseEffects():boolean{return this.profile.settings.intenseEffects;}
@@ -90,13 +93,8 @@ export class App implements SceneDelegate {
     else if(this.state.over){this.modal='over';this.audio.setActive(false);this.render();this.platform.gameOver(this.state.id);}
   }
   private resize=():void=>{
-    const viewport=document.querySelector<HTMLElement>('#viewport')!,frame=document.querySelector<HTMLElement>('#frame')!;
-    const style=getComputedStyle(viewport),left=parseFloat(style.paddingLeft),right=parseFloat(style.paddingRight),top=parseFloat(style.paddingTop),bottom=parseFloat(style.paddingBottom),w=viewport.clientWidth-left-right,h=viewport.clientHeight-top-bottom;
-    const key=`${w}:${h}:${left}:${right}:${top}:${bottom}`;if(key===this.viewportKey)return;this.viewportKey=key;
-    this.displayScale=Math.min(w/VIEW.width,h/VIEW.height);
-    frame.style.left=`${(viewport.clientWidth+left-right)/2}px`;frame.style.top=`${(viewport.clientHeight+top-bottom)/2}px`;
-    frame.style.transform=`translate(-50%, -50%) scale(${this.displayScale})`;
-    this.scene?.cancel();
+    const {key,scale}=fitFrame();if(key===this.viewportKey)return;this.viewportKey=key;
+    this.displayScale=scale;this.scene?.cancel();
   };
   private platformChanged():void{
     this.audio.setBlocked(!this.platform.audioEnabled||this.platform.paused);
