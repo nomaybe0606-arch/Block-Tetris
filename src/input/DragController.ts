@@ -1,11 +1,12 @@
 import { DRAG } from '../config/controls';
 import type { Piece, Shape } from '../core/types';
-import { clientToWorld, createGrip, pieceHitDistance, poseAt, type CanvasRect, type DragPose, type Grip, type PieceTransform, type Point } from './dragGeometry';
+import { clientToWorld, createGrip, createZoneGrip, trayPickupSlot, pieceHitDistance, poseAt, type CanvasRect, type DragPose, type Grip, type PieceTransform, type Point } from './dragGeometry';
 
 export interface DragHost {
   enabled(): boolean;
   getPiece(slot: number): { piece: Piece; shape: Shape; transform: PieceTransform } | null;
   reducedMotion(): boolean;
+  pickupBottom?():number;
   preparePickup(): void;
   begin(slot: number, pose: DragPose): void;
   move(pose: DragPose): void;
@@ -33,14 +34,20 @@ export class DragController {
     this.host.preparePickup();
     const rect=this.canvas.getBoundingClientRect();
     if(rect.width<=0||rect.height<=0)return;
-    const point=this.local(event,rect),touch=event.pointerType==='touch';
+    const point=this.local(event,rect),touch=event.pointerType==='touch',candidate=trayPickupSlot(point,this.host.pickupBottom?.());
+    if(candidate<0)return;
     const slop=touch?DRAG.touchHitSlopCss:DRAG.mouseHitSlopCss;
     let slot=-1,distance=Infinity,grip:Grip|null=null;
-    // Later tray children are on top if two wide shapes overlap.
+    // Within one column, direct block contact keeps its precise grip; empty space uses a center grip.
     for(let i=2;i>=0;i--){
+      if(candidate>=0&&i!==candidate)continue;
       const data=this.host.getPiece(i);if(!data||data.transform.scale<=0)continue;
       const hit=pieceHitDistance(point,data.shape,data.transform,rect);
       if(hit<=slop&&hit<distance){slot=i;distance=hit;grip=createGrip(point,data.shape,data.transform,touch,rect);}
+    }
+    if(!grip){
+      const data=candidate>=0?this.host.getPiece(candidate):null;
+      if(data&&data.transform.scale>0){slot=candidate;grip=createZoneGrip(point,data.shape,data.transform,touch,rect);}
     }
     if(!grip)return;
     event.preventDefault();

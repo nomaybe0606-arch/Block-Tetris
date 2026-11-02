@@ -1,13 +1,18 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { BoardRenderer } from '../src/rendering/BoardRenderer';
 import { NeonEffects } from '../src/rendering/NeonEffects';
 import { Feedback } from '../src/rendering/Feedback';
 import { newGame } from '../src/core/game';
 import { emptyBoard } from '../src/core/board';
 import { getShape } from '../src/core/shapes';
-import { renderScene } from './helpers/renderScene';
+import { renderScene, RenderNode } from './helpers/renderScene';
+import { GRID } from '../src/config/layout';
 
 describe('persistent rendering during play',()=>{
+  it('draws only the board frame and leaves the entire pickup strip free of slot backplates',()=>{
+    const s=renderScene(),draw=vi.spyOn(RenderNode.prototype,'fillRoundedRect');
+    try{new BoardRenderer(s.scene);expect(draw).toHaveBeenCalledTimes(2);expect((draw.mock.calls as unknown[][]).every(args=>Number(args[1])<GRID.y)).toBe(true);}finally{draw.mockRestore();}
+  });
   it('allows grabbing a newly dealt piece before its fade-in has advanced',()=>{
     const s=renderScene(),board=new BoardRenderer(s.scene),state=newGame(4);board.renderTray(state,false,true);
     expect(board.trayTransform(0)).toMatchObject({scale:expect.any(Number)});
@@ -17,7 +22,7 @@ describe('persistent rendering during play',()=>{
     const s=renderScene(),board=new BoardRenderer(s.scene),count=s.nodes.length,state=emptyBoard();
     for(let move=0;move<1000;move++){const x=move%8,y=Math.floor(move/8)%8;state[y][x]=move%8;board.render(state);}
     expect(s.nodes).toHaveLength(count);expect(s.nodes.filter(node=>node.kind==='image'&&node.destroyed)).toHaveLength(0);
-    state[0][0]=2;board.render(state);const block=s.nodes.find(node=>node.key==='block-2'&&node.x===58&&node.y===256)!;
+    state[0][0]=2;board.render(state);const block=s.nodes.find(node=>node.key==='block-2'&&node.x===58&&node.y===GRID.y+26)!;
     board.clearCells([[0,0]],false);s.complete();expect(block.alpha).toBe(0);
     state[0][0]=0;board.render(state);state[0][0]=2;board.render(state);
     expect(block.visible).toBe(true);expect(block.alpha).toBe(1);expect(block.scaleX).toBe(49/128);
@@ -41,7 +46,7 @@ describe('persistent rendering during play',()=>{
   it('preserves land animation on unchanged cells and omits it with Reduced Motion',()=>{
     const s=renderScene(),board=new BoardRenderer(s.scene),state=emptyBoard();state[0][0]=1;board.render(state);
     board.landCells([[0,0]],false);const active=s.active.size;board.render(state);expect(s.active.size).toBe(active);
-    s.complete();expect([...s.nodes].find(node=>node.key==='block-1'&&node.x===58&&node.y===256)?.scaleY).toBe(49/128);
+    s.complete();expect([...s.nodes].find(node=>node.key==='block-1'&&node.x===58&&node.y===GRID.y+26)?.scaleY).toBe(49/128);
     board.landCells([[0,0]],true);expect(s.active.size).toBe(0);
   });
   it('retains a proportional particle budget for one-at-a-time emissions at low FPS',()=>{

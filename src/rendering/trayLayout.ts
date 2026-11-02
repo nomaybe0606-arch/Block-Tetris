@@ -2,7 +2,7 @@ import { GRID, TRAY } from '../config/layout';
 import type { Shape } from '../core/types';
 import type { PieceTransform } from '../input/dragGeometry';
 
-export const TRAY_AREA={top:684,bottom:794,width:128,padding:8};
+export const TRAY_AREA={top:660,bottom:770,width:128,padding:8};
 /** Fit the complete figure with room for highlights, inside its own slot. */
 export function trayTransformFor(shape:Shape,slot:number,reserveSwapSpace=false):PieceTransform{
   const preferred=reserveSwapSpace?.52:TRAY.scale;

@@ -22,6 +22,8 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer;border:0;-w
 @keyframes float{0%,100%{translate:0 0}50%{translate:0 -9px}}@keyframes pulse{50%{opacity:.4}}@keyframes loading{to{translate:70px 0}}@keyframes modal-in{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}.reduced-motion *{animation:none!important;transition:none!important}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}@media(max-width:500px){#frame{border-radius:0;box-shadow:none}}
 
+/* Compact play HUD gives the board and invisible pickup columns more vertical room. */
+.game-ui .topbar{top:24px}.score-panel{top:84px}.score-value{font-size:60px}.record-pill{top:105px}.record-pill strong{font-size:23px}.board-meta{top:169px}.tray-label{top:640px}.tutorial-skip{top:72px;font-size:11px;padding:8px}
 /* Keep canvas updates in their own compositing/paint boundary, apart from DOM score updates. */
 #game{contain:strict;isolation:isolate;transform:translateZ(0)}
 /* Grid Tetris 2.0 — Neon Glass. Raster glows are cached by Phaser; no persistent per-cell blur. */

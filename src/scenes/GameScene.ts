@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GRID } from '../config/layout';
+import { GRID, TRAY } from '../config/layout';
 import { DRAG } from '../config/controls';
 import { FEEDBACK } from '../config/feedback';
 import { ANIMATION } from '../config/animation';
@@ -51,6 +51,7 @@ export class GameScene extends Phaser.Scene {
         return piece&&transform?{piece,shape:getShape(piece.shapeId),transform}:null;
       },
       reducedMotion:()=>this.delegate.reducedMotion(),
+      pickupBottom:()=>this.delegate.showSwapControl()?TRAY.controlsTop:TRAY.pickupBottom,
       preparePickup:()=>{this.cancelDrag();this.finishReturn();},
       begin:(slot,pose)=>this.begin(slot,pose),move:pose=>this.move(pose),end:(c,r)=>this.drop(c,r),cancel:()=>this.cancelDrag(),
     });
@@ -73,7 +74,7 @@ export class GameScene extends Phaser.Scene {
   cancel(): void { this.controls?.cancel();this.cancelDrag(); }
   private decorReduced():boolean{return this.delegate.reducedMotion()||!this.delegate.intenseEffects();}
   isDragging():boolean{return this.controls?.dragging||this.drag!==null;}
-  record():void{this.neon.pulse(360,145,190,140,0xffd578,.6);}
+  record():void{this.neon.pulse(360,130,190,140,0xffd578,.6);}
   animateSwap(offer:SwapOffer):Promise<void>{this.cancel();return this.swapAnimation.play(offer,this.decorReduced());}
   update(_time:number,delta:number):void{
     this.controls?.update();const reduced=this.delegate.reducedMotion(),intense=this.delegate.intenseEffects(),minimal=reduced||!intense;
