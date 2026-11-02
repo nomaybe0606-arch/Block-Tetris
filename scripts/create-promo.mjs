@@ -11,7 +11,7 @@ if (!['vk', 'pikabu'].includes(target)) throw new Error('Usage: node scripts/cre
 const out = join(root, 'promo', target);
 const chrome = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 // Pikabu Games forbids foreign words in titles, so its artwork uses the Russian name.
-const title = target === 'pikabu' ? 'Грид тетрис' : 'Grid Tetris';
+const title = target === 'pikabu' ? 'Грид Пульс' : 'Grid Pulse';
 const slogan = 'Собирай линии в своём ритме';
 // Same palette as the game (src/config/layout.ts).
 const COLORS = ['#9274ff', '#32caff', '#ffbe55', '#f06bb4', '#32dcc3', '#4f91ff', '#cd71fa'];
