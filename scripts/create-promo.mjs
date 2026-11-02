@@ -10,7 +10,8 @@ const target = process.argv[2];
 if (!['vk', 'pikabu'].includes(target)) throw new Error('Usage: node scripts/create-promo.mjs <vk|pikabu>');
 const out = join(root, 'promo', target);
 const chrome = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-const title = 'Grid Tetris';
+// Pikabu Games forbids foreign words in titles, so its artwork uses the Russian name.
+const title = target === 'pikabu' ? 'Грид тетрис' : 'Grid Tetris';
 const slogan = 'Собирай линии в своём ритме';
 // Same palette as the game (src/config/layout.ts).
 const COLORS = ['#9274ff', '#32caff', '#ffbe55', '#f06bb4', '#32dcc3', '#4f91ff', '#cd71fa'];
@@ -78,7 +79,7 @@ const PIKABU = {
   'icon-1024.png': [576, 576, iconPage, 1024 / 576],
   'cover-1920x1080.png': [1280, 720, `
     <img src="${iconUri()}" style="position:absolute;left:80px;top:90px;width:120px;height:120px;filter:drop-shadow(0 12px 24px #05081f90)">
-    <h1 style="position:absolute;left:80px;top:270px;font-size:100px;width:600px">${title}</h1>
+    <h1 style="position:absolute;left:80px;top:276px;font-size:84px;width:600px">${title}</h1>
     <p style="position:absolute;left:84px;top:470px;font-size:36px;width:430px">${slogan}</p>
     ${board(midGame, 60, 8, 'left:665px;top:84px;transform:rotate(4deg)')}`, 1.5],
   'screenshot-1-1920x1080.png': [1280, 720, wide('Заполняй ряды и столбцы', '<p>Перетаскивай фигуры на поле 8 × 8 — полная линия исчезает</p>', midGame), 1.5],
