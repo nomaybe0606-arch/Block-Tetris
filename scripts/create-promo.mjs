@@ -1,4 +1,4 @@
-// Renders VK catalogue artwork (icons, snippet, screenshots) to promo/vk/ with headless Chrome.
+// Renders catalogue artwork with headless Chrome. Usage: node scripts/create-promo.mjs <vk|pikabu> → promo/<target>/
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -6,7 +6,9 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const root = resolve(import.meta.dirname, '..');
-const out = join(root, 'promo', 'vk');
+const target = process.argv[2];
+if (!['vk', 'pikabu'].includes(target)) throw new Error('Usage: node scripts/create-promo.mjs <vk|pikabu>');
+const out = join(root, 'promo', target);
 const chrome = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const title = 'Grid Tetris';
 const slogan = 'Собирай линии в своём ритме';
@@ -41,14 +43,16 @@ function board(rows, cell, gap, style) {
   })).join('');
   return `<div class="board" style="grid-template-columns:repeat(${rows[0].length},${cell}px);grid-auto-rows:${cell}px;gap:${gap}px;${style}">${html}</div>`;
 }
-const headline = (heading, body, width = 520) => `<div style="position:absolute;left:72px;top:50%;transform:translateY(-50%);width:${width}px">
-  <h1 style="font-size:60px">${heading}</h1><div style="margin-top:26px;font-size:28px">${body}</div></div>`;
+const headline = (heading, body, width = 520, size = 60) => `<div style="position:absolute;left:72px;top:50%;transform:translateY(-50%);width:${width}px">
+  <h1 style="font-size:${size}px">${heading}</h1><div style="margin-top:26px;font-size:28px">${body}</div></div>`;
 
 const midGame = ['00..1144', '0...1.44', '22.5555.', '2...6...', '********', '33.6..00', '3..66.0.', '3...2220'];
 const comboBoard = ['1100*344', '1...*...', '22..*.55', '2...*..5', '6...*...', '66..*.00', '.6..*..0', '33..*220'];
 const calmBoard = ['........', '..00....', '..0..11.', '......1.', '.33.....', '.3...44.', '.......4', '22......'];
 
-const pages = {
+const iconPage = `<img src="${iconUri(false)}" style="position:absolute;inset:0;width:100%;height:100%">`;
+// Each page is [layout width, layout height, markup, output scale]; the PNG is layout × scale.
+const VK = {
   'icon-576.png': [576, 576, `<img src="${iconUri(false)}" style="position:absolute;inset:0;width:100%;height:100%">`],
   'icon-278.png': [278, 278, `<img src="${iconUri(false)}" style="position:absolute;inset:0;width:100%;height:100%">`],
   'icon-150.png': [150, 150, `<img src="${iconUri(false)}" style="position:absolute;inset:0;width:100%;height:100%">`],
@@ -68,17 +72,33 @@ const pages = {
     ${headline('Без таймера.<br>В своём ритме', '<span class="chip">🔄 Замена фигуры</span><span class="chip">🎵 Спокойная музыка</span><span class="chip">💾 Прогресс сохраняется</span>', 540)}
     ${board(calmBoard, 50, 7, 'left:660px;top:46px')}`],
 };
+// Pikabu Games wants a 1024 square icon and 16:9 art from 1920×1080; it is laid out at 1280×720 and rendered at 1.5×.
+const wide = (heading, body, rows, width = 500) => `${headline(heading, body, width, 64)}${board(rows, 64, 8, 'left:612px;top:62px')}`;
+const PIKABU = {
+  'icon-1024.png': [576, 576, iconPage, 1024 / 576],
+  'cover-1920x1080.png': [1280, 720, `
+    <img src="${iconUri()}" style="position:absolute;left:80px;top:90px;width:120px;height:120px;filter:drop-shadow(0 12px 24px #05081f90)">
+    <h1 style="position:absolute;left:80px;top:270px;font-size:100px;width:600px">${title}</h1>
+    <p style="position:absolute;left:84px;top:470px;font-size:36px;width:430px">${slogan}</p>
+    ${board(midGame, 60, 8, 'left:665px;top:84px;transform:rotate(4deg)')}`, 1.5],
+  'screenshot-1-1920x1080.png': [1280, 720, wide('Заполняй ряды и столбцы', '<p>Перетаскивай фигуры на поле 8 × 8 — полная линия исчезает</p>', midGame), 1.5],
+  'screenshot-2-1920x1080.png': [1280, 720, wide('Комбо за несколько линий подряд', '<span class="chip">✨ Яркие эффекты</span><span class="chip">🏆 Личный рекорд</span>', comboBoard), 1.5],
+  'screenshot-3-1920x1080.png': [1280, 720, wide('Без таймера.<br>В своём ритме', '<span class="chip">🔄 Замена фигуры</span><span class="chip">🎵 Спокойная музыка</span><span class="chip">💾 Прогресс сохраняется</span>', calmBoard), 1.5],
+};
+const pages = target === 'vk' ? VK : PIKABU;
 
 mkdirSync(out, { recursive: true });
 const work = mkdtempSync(join(tmpdir(), 'vk-promo-'));
 try {
-  for (const [file, [width, height, body]] of Object.entries(pages)) {
+  for (const [file, [width, height, body, fixedScale]] of Object.entries(pages)) {
     // Headless Chrome has a minimum window size, so small icons are drawn at 576 px and scaled down.
-    const scale = width < 576 && width === height ? width / 576 : 1;
+    const scale = fixedScale ?? (width < 576 && width === height ? width / 576 : 1);
+    // Downscaling uses the device scale factor; upscaling uses CSS zoom, since headless Chrome clamps large scaled windows.
+    const zoom = scale > 1 ? scale : 1, dsf = scale > 1 ? 1 : scale;
     const html = join(work, file.replace(/\.png$/, '.html'));
-    writeFileSync(html, `<!doctype html><meta charset="utf-8"><style>${base}</style><body>${body}</body>`);
-    execFileSync(chrome, ['--headless=new', '--disable-gpu', '--hide-scrollbars', `--force-device-scale-factor=${scale}`, '--virtual-time-budget=2000',
-      `--window-size=${width / scale},${height / scale}`, `--screenshot=${join(out, file)}`, pathToFileURL(html).href], { stdio: 'ignore' });
-    console.log(`promo/vk/${file}`);
+    writeFileSync(html, `<!doctype html><meta charset="utf-8"><style>${base}</style><body><div style="position:relative;width:${width / dsf}px;height:${height / dsf}px;zoom:${zoom}">${body}</div></body>`);
+    execFileSync(chrome, ['--headless=new', '--disable-gpu', '--hide-scrollbars', `--force-device-scale-factor=${dsf}`, '--virtual-time-budget=2000',
+      `--window-size=${Math.round(width * zoom / dsf)},${Math.round(height * zoom / dsf)}`, `--screenshot=${join(out, file)}`, pathToFileURL(html).href], { stdio: 'ignore' });
+    console.log(`promo/${target}/${file}`);
   }
 } finally { rmSync(work, { recursive: true, force: true }); }
