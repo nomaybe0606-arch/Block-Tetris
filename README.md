@@ -1,4 +1,6 @@
-# Grid Tetris 2.0.8
+# Grid Pulse 2.0.8
+
+CrazyGames Basic Launch подготовлен в отдельной ветке `release/crazygames-grid-pulse`: команды `build:crazygames`, `verify:crazygames`, `package:crazygames`; результат `dist-crazygames/` и `artifacts/grid-pulse-crazygames.zip`. У этой сборки собственный SDK v3, Data и lifecycle; реклама отключена. Инструкция, проверенные артефакты и ограничения: [CRAZYGAMES_RELEASE.md](CRAZYGAMES_RELEASE.md). Имя репозитория, Pages URL и ключи прогресса сохранены; основной workflow не менялся.
 
 Полноценный локальный проект классической головоломки 8×8: TypeScript, Phaser 3, Vite. Собственные блоки с фасками, SVG-иконки и семь оригинальных OGG-ассетов. React и сервер не нужны.
 
@@ -127,7 +129,7 @@ GitHub Pages используется для тестирования геймп
 
 Официальный npm SDK `@playgama/bridge@2.4.0` и официальный Vite-плагин с `mode: 'local'`. SDK находится в сборке отдельным заменяемым `playgama-bridge.js`, CDN для игрового кода и ассетов не нужен.
 
-В `public/playgama-bridge-config.json` заданы официальные `disableLoadingLogo: true` и `loadingScreenType: "none"`. У версии 2.4.0 оба параметра поддерживаются; без них SDK по умолчанию создаёт загрузочный логотип. Конфигурация читается до создания его визуальных элементов, поэтому DOM SDK не скрывается и не изменяется. Остаётся собственная загрузка Grid Tetris; порядок инициализации, Storage и lifecycle сохранены. Основание: [исходник SDK 2.4.0, setupLoadingVisuals](https://github.com/Playgama/bridge/blob/v2.4.0/src/PlaygamaBridge.ts#L311-L334). Если хост требует своё загрузочное представление, адаптировать platform override по его официальным правилам и проверить в sandbox; чужой host SDK не модифицируется.
+В `public/playgama-bridge-config.json` заданы официальные `disableLoadingLogo: true` и `loadingScreenType: "none"`. У версии 2.4.0 оба параметра поддерживаются; без них SDK по умолчанию создаёт загрузочный логотип. Конфигурация читается до создания его визуальных элементов, поэтому DOM SDK не скрывается и не изменяется. Остаётся собственная загрузка Grid Pulse; порядок инициализации, Storage и lifecycle сохранены. Основание: [исходник SDK 2.4.0, setupLoadingVisuals](https://github.com/Playgama/bridge/blob/v2.4.0/src/PlaygamaBridge.ts#L311-L334). Если хост требует своё загрузочное представление, адаптировать platform override по его официальным правилам и проверить в sandbox; чужой host SDK не модифицируется.
 
 Порядок: `bridge.initialize()` → `bridge.storage.get()` → проверка профиля → запуск Phaser → первое интерактивное меню → `game_ready`.
 

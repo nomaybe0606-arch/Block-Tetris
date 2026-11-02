@@ -12,7 +12,7 @@ describe('CrazyGames Basic Launch boundary',()=>{
   it.each([['ru-RU','ru'],['RU','ru'],['en-US','en'],['de-DE','en'],['','en']])('uses locale %s with English fallback',async(locale,expected)=>{const {platform}=setup(locale);await platform.initialize();expect(platform.language).toBe(expected);});
   it('waits for async SDK initialization before touching its modules',async()=>{
     const {platform,sdk}=setup();let finish!:()=>void;const deferred=new Promise<void>(resolve=>{finish=resolve;});vi.mocked(sdk.init).mockReturnValue(deferred);
-    const init=platform.initialize();await Promise.resolve();expect(sdk.game.loadingStart).not.toHaveBeenCalled();finish();await init;expect(sdk.game.loadingStart).toHaveBeenCalledOnce();
+    const init=platform.initialize();await vi.waitFor(()=>expect(sdk.init).toHaveBeenCalledOnce());expect(sdk.game.loadingStart).not.toHaveBeenCalled();finish();await init;expect(sdk.game.loadingStart).toHaveBeenCalledOnce();
   });
   it('does not call game, user or data modules in disabled environments',async()=>{
     const {platform,sdk}=setup('ru','disabled');for(const key of ['game','user','data'])Object.defineProperty(sdk,key,{get:()=>{throw new Error('Disabled module touched');}});
